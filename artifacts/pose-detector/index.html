@@ -27,9 +27,9 @@
         justify-content: center;
         width: 100vw;
         height: 100vh;
-        gap: 0;
       }
 
+      /* ── Header ─────────────────────────────── */
       #header {
         position: fixed;
         top: 0;
@@ -49,6 +49,43 @@
         letter-spacing: 0.04em;
         text-transform: uppercase;
         color: #c8c8e0;
+      }
+
+      #header-right {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      #calibrate-btn {
+        display: none;
+        align-items: center;
+        gap: 7px;
+        padding: 7px 16px;
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        color: #fff;
+        font-size: 12px;
+        font-weight: 600;
+        border: none;
+        border-radius: 20px;
+        cursor: pointer;
+        letter-spacing: 0.02em;
+        box-shadow: 0 2px 12px rgba(99,102,241,0.4);
+        transition: opacity 0.2s, transform 0.15s, box-shadow 0.2s;
+      }
+
+      #calibrate-btn.visible { display: flex; }
+      #calibrate-btn:hover   { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 4px 18px rgba(99,102,241,0.5); }
+      #calibrate-btn:active  { transform: scale(0.97); }
+
+      #calibrate-btn.flash {
+        animation: calFlash 0.5s ease;
+      }
+
+      @keyframes calFlash {
+        0%   { background: linear-gradient(135deg, #6366f1, #8b5cf6); }
+        40%  { background: linear-gradient(135deg, #22c55e, #16a34a); box-shadow: 0 0 24px rgba(34,197,94,0.7); }
+        100% { background: linear-gradient(135deg, #6366f1, #8b5cf6); }
       }
 
       #status-badge {
@@ -76,6 +113,7 @@
       #status-dot.active  { background: #22c55e; box-shadow: 0 0 6px #22c55e88; }
       #status-dot.error   { background: #ef4444; }
 
+      /* ── Video / Canvas ──────────────────────── */
       #video-container {
         position: relative;
         width: 100vw;
@@ -86,24 +124,21 @@
 
       #webcam {
         position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
         object-fit: cover;
         transform: scaleX(-1);
       }
 
       #overlay-canvas {
         position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
         transform: scaleX(-1);
         pointer-events: none;
       }
 
+      /* ── Start overlay ───────────────────────── */
       #start-overlay {
         position: absolute;
         inset: 0;
@@ -155,6 +190,7 @@
       #start-btn:hover  { opacity: 0.9; transform: translateY(-1px); }
       #start-btn:active { transform: translateY(0); }
 
+      /* ── Error overlay ───────────────────────── */
       #error-overlay {
         position: absolute;
         inset: 0;
@@ -182,6 +218,72 @@
         color: #666;
       }
 
+      /* ── Posture banner ──────────────────────── */
+      #posture-banner {
+        position: fixed;
+        bottom: 80px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 200;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        pointer-events: none;
+        transition: opacity 0.3s ease;
+      }
+
+      #posture-banner.visible { display: flex; }
+
+      #posture-label {
+        font-size: 36px;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        text-align: center;
+        text-transform: uppercase;
+        line-height: 1;
+        padding: 10px 28px 12px;
+        border-radius: 14px;
+        transition: color 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
+      }
+
+      #posture-label.good {
+        color: #22c55e;
+        background: rgba(34,197,94,0.12);
+        box-shadow: 0 0 32px rgba(34,197,94,0.25), inset 0 0 0 1.5px rgba(34,197,94,0.3);
+      }
+
+      #posture-label.bad {
+        color: #ef4444;
+        background: rgba(239,68,68,0.15);
+        box-shadow: 0 0 40px rgba(239,68,68,0.4), inset 0 0 0 1.5px rgba(239,68,68,0.4);
+        animation: badPulse 1.2s ease infinite;
+      }
+
+      #posture-label.prompt {
+        font-size: 16px;
+        font-weight: 600;
+        color: #a78bfa;
+        background: rgba(139,92,246,0.12);
+        box-shadow: inset 0 0 0 1.5px rgba(139,92,246,0.25);
+        text-transform: none;
+        letter-spacing: 0.01em;
+      }
+
+      @keyframes badPulse {
+        0%, 100% { box-shadow: 0 0 40px rgba(239,68,68,0.4), inset 0 0 0 1.5px rgba(239,68,68,0.4); }
+        50%       { box-shadow: 0 0 60px rgba(239,68,68,0.7), inset 0 0 0 1.5px rgba(239,68,68,0.6); }
+      }
+
+      #posture-sub {
+        font-size: 12px;
+        font-weight: 500;
+        color: rgba(255,255,255,0.4);
+        letter-spacing: 0.04em;
+        text-align: center;
+      }
+
+      /* ── Bottom stats ────────────────────────── */
       #stats {
         position: fixed;
         bottom: 20px;
@@ -189,7 +291,7 @@
         transform: translateX(-50%);
         z-index: 100;
         display: flex;
-        gap: 12px;
+        gap: 10px;
         opacity: 0;
         transition: opacity 0.4s ease;
       }
@@ -205,6 +307,7 @@
         border-radius: 14px;
         padding: 5px 12px;
         letter-spacing: 0.03em;
+        white-space: nowrap;
       }
 
       .stat-chip span {
@@ -219,9 +322,18 @@
 
       <div id="header">
         <h1>Pose Detector</h1>
-        <div id="status-badge">
-          <div id="status-dot"></div>
-          <span id="status-text">Idle</span>
+        <div id="header-right">
+          <button id="calibrate-btn">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>
+            </svg>
+            Calibrate
+          </button>
+          <div id="status-badge">
+            <div id="status-dot"></div>
+            <span id="status-text">Idle</span>
+          </div>
         </div>
       </div>
 
@@ -250,10 +362,16 @@
         </div>
       </div>
 
+      <div id="posture-banner">
+        <div id="posture-label" class="prompt">Sit up straight, then click Calibrate</div>
+        <div id="posture-sub"></div>
+      </div>
+
       <div id="stats">
         <div class="stat-chip">FPS&nbsp;<span id="fps-val">—</span></div>
         <div class="stat-chip">Landmarks&nbsp;<span id="lm-val">—</span></div>
-        <div class="stat-chip">Confidence&nbsp;<span id="conf-val">—</span></div>
+        <div class="stat-chip">Nose→Shoulder&nbsp;<span id="dist-val">—</span></div>
+        <div class="stat-chip">Baseline&nbsp;<span id="baseline-val">—</span></div>
       </div>
 
     </div>
@@ -263,26 +381,42 @@
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
 
     <script>
-      const videoEl    = document.getElementById('webcam');
-      const canvasEl   = document.getElementById('overlay-canvas');
-      const ctx        = canvasEl.getContext('2d');
-      const startOverlay = document.getElementById('start-overlay');
-      const errorOverlay = document.getElementById('error-overlay');
-      const errorMsg   = document.getElementById('error-msg');
-      const statusDot  = document.getElementById('status-dot');
-      const statusText = document.getElementById('status-text');
-      const statsEl    = document.getElementById('stats');
-      const fpsVal     = document.getElementById('fps-val');
-      const lmVal      = document.getElementById('lm-val');
-      const confVal    = document.getElementById('conf-val');
-      const startBtn   = document.getElementById('start-btn');
+      /* ── DOM refs ─────────────────────────────── */
+      const videoEl       = document.getElementById('webcam');
+      const canvasEl      = document.getElementById('overlay-canvas');
+      const ctx           = canvasEl.getContext('2d');
+      const startOverlay  = document.getElementById('start-overlay');
+      const errorOverlay  = document.getElementById('error-overlay');
+      const errorMsg      = document.getElementById('error-msg');
+      const statusDot     = document.getElementById('status-dot');
+      const statusText    = document.getElementById('status-text');
+      const statsEl       = document.getElementById('stats');
+      const fpsVal        = document.getElementById('fps-val');
+      const lmVal         = document.getElementById('lm-val');
+      const distVal       = document.getElementById('dist-val');
+      const baselineVal   = document.getElementById('baseline-val');
+      const startBtn      = document.getElementById('start-btn');
+      const calibrateBtn  = document.getElementById('calibrate-btn');
+      const postureBanner = document.getElementById('posture-banner');
+      const postureLabel  = document.getElementById('posture-label');
+      const postureSub    = document.getElementById('posture-sub');
 
-      let pose = null;
-      let camera = null;
-      let frameCount = 0;
-      let lastFpsTime = performance.now();
-      let currentFps = 0;
+      /* ── State ────────────────────────────────── */
+      let pose            = null;
+      let camera          = null;
+      let frameCount      = 0;
+      let lastFpsTime     = performance.now();
+      let baselineDistance = null;   // null = not yet calibrated
+      let latestLandmarks  = null;   // most recent pose landmarks
+      let pendingCalibrate = false;  // flag: capture on next frame
 
+      /* ── MediaPipe landmark indices ───────────── */
+      const NOSE          = 0;
+      const LEFT_SHOULDER = 11;
+      const RIGHT_SHOULDER = 12;
+      const SLOUCH_THRESHOLD = 0.85; // 85 %
+
+      /* ── Helpers ──────────────────────────────── */
       function setStatus(state, text) {
         statusDot.className = '';
         statusDot.classList.add(state);
@@ -290,9 +424,9 @@
       }
 
       function resizeCanvas() {
-        const container = document.getElementById('video-container');
-        canvasEl.width  = container.clientWidth;
-        canvasEl.height = container.clientHeight;
+        const c = document.getElementById('video-container');
+        canvasEl.width  = c.clientWidth;
+        canvasEl.height = c.clientHeight;
       }
 
       window.addEventListener('resize', resizeCanvas);
@@ -300,22 +434,72 @@
 
       function updateFps() {
         frameCount++;
-        const now = performance.now();
+        const now     = performance.now();
         const elapsed = now - lastFpsTime;
         if (elapsed >= 500) {
-          currentFps = Math.round((frameCount / elapsed) * 1000);
-          frameCount = 0;
+          fpsVal.textContent = Math.round((frameCount / elapsed) * 1000);
+          frameCount  = 0;
           lastFpsTime = now;
-          fpsVal.textContent = currentFps;
         }
       }
 
+      /* Returns the nose-to-shoulder-midpoint Y distance (normalised 0-1).
+         A larger value means the nose is farther above the shoulders (good posture).
+         Returns null if key landmarks aren't visible enough. */
+      function getNoseShoulderDistance(landmarks) {
+        const nose  = landmarks[NOSE];
+        const lSh   = landmarks[LEFT_SHOULDER];
+        const rSh   = landmarks[RIGHT_SHOULDER];
+
+        if (!nose || !lSh || !rSh) return null;
+        if (nose.visibility < 0.5 || lSh.visibility < 0.4 || rSh.visibility < 0.4) return null;
+
+        const shoulderMidY = (lSh.y + rSh.y) / 2;
+        return shoulderMidY - nose.y;  // positive → nose above shoulders
+      }
+
+      /* ── Posture banner update ────────────────── */
+      function updatePostureBanner(currentDist) {
+        if (currentDist !== null) {
+          distVal.textContent = currentDist.toFixed(3);
+        }
+
+        if (baselineDistance === null) {
+          postureLabel.className = 'prompt';
+          postureLabel.textContent = 'Sit up straight, then click Calibrate';
+          postureSub.textContent   = '';
+          return;
+        }
+
+        if (currentDist === null) {
+          postureLabel.className = 'prompt';
+          postureLabel.textContent = 'Upper body not detected';
+          postureSub.textContent   = 'Make sure your head and shoulders are visible';
+          return;
+        }
+
+        const ratio = currentDist / baselineDistance;
+
+        if (ratio < SLOUCH_THRESHOLD) {
+          postureLabel.className   = 'bad';
+          postureLabel.textContent = '⚠ Bad Posture';
+          postureSub.textContent   = `${Math.round(ratio * 100)}% of baseline — sit up straight!`;
+        } else {
+          postureLabel.className   = 'good';
+          postureLabel.textContent = '✓ Good Posture';
+          postureSub.textContent   = `${Math.round(ratio * 100)}% of baseline`;
+        }
+      }
+
+      /* ── Draw skeleton ────────────────────────── */
       function drawResults(results) {
         ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+        latestLandmarks = results.poseLandmarks || null;
 
         if (!results.poseLandmarks) {
           lmVal.textContent = '0';
-          confVal.textContent = '—';
+          updatePostureBanner(null);
+          updateFps();
           return;
         }
 
@@ -323,121 +507,128 @@
         const W = canvasEl.width;
         const H = canvasEl.height;
 
-        const POSE_CONNECTIONS = window.POSE_CONNECTIONS;
+        /* Capture calibration baseline on next available frame */
+        if (pendingCalibrate) {
+          const d = getNoseShoulderDistance(landmarks);
+          if (d !== null && d > 0) {
+            baselineDistance = d;
+            baselineVal.textContent = d.toFixed(3);
+            pendingCalibrate = false;
 
+            calibrateBtn.classList.add('flash');
+            setTimeout(() => calibrateBtn.classList.remove('flash'), 600);
+          }
+        }
+
+        /* Draw connections */
+        const POSE_CONNECTIONS = window.POSE_CONNECTIONS;
         if (POSE_CONNECTIONS) {
           ctx.save();
-
-          for (const [startIdx, endIdx] of POSE_CONNECTIONS) {
-            const s = landmarks[startIdx];
-            const e = landmarks[endIdx];
+          for (const [si, ei] of POSE_CONNECTIONS) {
+            const s = landmarks[si];
+            const e = landmarks[ei];
             if (!s || !e) continue;
             if (s.visibility < 0.3 || e.visibility < 0.3) continue;
 
             const alpha = Math.min(s.visibility, e.visibility);
-
-            const sx = s.x * W;
-            const sy = s.y * H;
-            const ex = e.x * W;
-            const ey = e.y * H;
-
-            const mx = (sx + ex) / 2;
-            const my = (sy + ey) / 2;
-
+            const sx = s.x * W, sy = s.y * H;
+            const ex = e.x * W, ey = e.y * H;
             const grad = ctx.createLinearGradient(sx, sy, ex, ey);
 
-            const isArm  = (startIdx >= 11 && startIdx <= 22) || (endIdx >= 11 && endIdx <= 22);
-            const isLeg  = (startIdx >= 23 && startIdx <= 32) || (endIdx >= 23 && endIdx <= 32);
-            const isTorso = !isArm && !isLeg;
+            const isArm = (si >= 11 && si <= 22) || (ei >= 11 && ei <= 22);
+            const isLeg = (si >= 23 && si <= 32) || (ei >= 23 && ei <= 32);
 
-            let color1, color2;
-            if (isArm) {
-              color1 = `rgba(99,102,241,${alpha})`;
-              color2 = `rgba(139,92,246,${alpha})`;
-            } else if (isLeg) {
-              color1 = `rgba(236,72,153,${alpha})`;
-              color2 = `rgba(244,114,182,${alpha})`;
-            } else {
-              color1 = `rgba(34,197,94,${alpha})`;
-              color2 = `rgba(74,222,128,${alpha})`;
-            }
+            let c1, c2;
+            if (isArm)      { c1 = `rgba(99,102,241,${alpha})`;  c2 = `rgba(139,92,246,${alpha})`; }
+            else if (isLeg) { c1 = `rgba(236,72,153,${alpha})`;  c2 = `rgba(244,114,182,${alpha})`; }
+            else            { c1 = `rgba(34,197,94,${alpha})`;   c2 = `rgba(74,222,128,${alpha})`; }
 
-            grad.addColorStop(0, color1);
-            grad.addColorStop(1, color2);
+            grad.addColorStop(0, c1);
+            grad.addColorStop(1, c2);
 
             ctx.beginPath();
             ctx.moveTo(sx, sy);
             ctx.lineTo(ex, ey);
-            ctx.lineWidth = 3;
+            ctx.lineWidth   = 3;
             ctx.strokeStyle = grad;
-            ctx.lineCap = 'round';
-            ctx.shadowBlur = 8;
-            ctx.shadowColor = color1.replace(/[\d.]+\)$/, '0.6)');
+            ctx.lineCap     = 'round';
+            ctx.shadowBlur  = 8;
+            ctx.shadowColor = c1.replace(/[\d.]+\)$/, '0.6)');
             ctx.stroke();
           }
-
           ctx.restore();
         }
 
-        let totalConf = 0;
+        /* Draw landmark dots */
         let visCount = 0;
-
         for (let i = 0; i < landmarks.length; i++) {
           const lm = landmarks[i];
           if (!lm || lm.visibility < 0.3) continue;
-
-          totalConf += lm.visibility;
           visCount++;
 
-          const x = lm.x * W;
-          const y = lm.y * H;
+          const x = lm.x * W, y = lm.y * H;
           const r = lm.visibility > 0.8 ? 5 : 3.5;
 
           const isFace = i <= 10;
           const isArm  = i >= 11 && i <= 22;
-          const isLeg  = i >= 23;
 
           let fill, glow;
-          if (isFace) {
-            fill = '#facc15';
-            glow = 'rgba(250,204,21,0.6)';
-          } else if (isArm) {
-            fill = '#a5b4fc';
-            glow = 'rgba(165,180,252,0.6)';
-          } else if (isLeg) {
-            fill = '#f9a8d4';
-            glow = 'rgba(249,168,212,0.6)';
-          } else {
-            fill = '#86efac';
-            glow = 'rgba(134,239,172,0.6)';
-          }
+          if (isFace)     { fill = '#facc15'; glow = 'rgba(250,204,21,0.6)'; }
+          else if (isArm) { fill = '#a5b4fc'; glow = 'rgba(165,180,252,0.6)'; }
+          else if (i>=23) { fill = '#f9a8d4'; glow = 'rgba(249,168,212,0.6)'; }
+          else            { fill = '#86efac'; glow = 'rgba(134,239,172,0.6)'; }
 
           ctx.save();
           ctx.beginPath();
           ctx.arc(x, y, r, 0, Math.PI * 2);
-          ctx.fillStyle = fill;
+          ctx.fillStyle  = fill;
           ctx.shadowBlur = 12;
           ctx.shadowColor = glow;
           ctx.fill();
-
           ctx.beginPath();
           ctx.arc(x, y, r + 2, 0, Math.PI * 2);
-          ctx.strokeStyle = fill.replace(/^#/, '') === fill.replace(/^#/, '') ? fill + '55' : 'rgba(255,255,255,0.15)';
-          ctx.lineWidth = 1;
+          ctx.strokeStyle = fill + '55';
+          ctx.lineWidth   = 1;
           ctx.stroke();
+          ctx.restore();
+        }
 
+        /* Highlight nose and shoulders for reference */
+        const refIndices = [NOSE, LEFT_SHOULDER, RIGHT_SHOULDER];
+        for (const idx of refIndices) {
+          const lm = landmarks[idx];
+          if (!lm || lm.visibility < 0.4) continue;
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(lm.x * W, lm.y * H, 8, 0, Math.PI * 2);
+          ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([3, 3]);
+          ctx.stroke();
           ctx.restore();
         }
 
         lmVal.textContent = visCount;
-        if (visCount > 0) {
-          const avgConf = Math.round((totalConf / visCount) * 100);
-          confVal.textContent = avgConf + '%';
-        }
-
+        updatePostureBanner(getNoseShoulderDistance(landmarks));
         updateFps();
       }
 
+      /* ── Calibrate button ─────────────────────── */
+      calibrateBtn.addEventListener('click', () => {
+        if (!latestLandmarks) return;
+
+        const d = getNoseShoulderDistance(latestLandmarks);
+        if (d === null || d <= 0) {
+          postureLabel.className   = 'prompt';
+          postureLabel.textContent = 'Can\'t see head & shoulders — adjust camera';
+          postureSub.textContent   = '';
+          return;
+        }
+
+        pendingCalibrate = true;
+      });
+
+      /* ── MediaPipe init ───────────────────────── */
       function initMediaPipe() {
         setStatus('loading', 'Loading model…');
 
@@ -461,9 +652,7 @@
 
         camera = new Camera(videoEl, {
           onFrame: async () => {
-            if (pose) {
-              await pose.send({ image: videoEl });
-            }
+            if (pose) await pose.send({ image: videoEl });
           },
           width: 1280,
           height: 720
@@ -474,6 +663,8 @@
             setStatus('active', 'Detecting');
             startOverlay.classList.add('hidden');
             statsEl.classList.add('visible');
+            postureBanner.classList.add('visible');
+            calibrateBtn.classList.add('visible');
           })
           .catch((err) => {
             console.error(err);
@@ -483,6 +674,7 @@
           });
       }
 
+      /* ── Start button ─────────────────────────── */
       startBtn.addEventListener('click', () => {
         startOverlay.classList.add('hidden');
         setStatus('loading', 'Starting camera…');
