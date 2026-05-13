@@ -388,6 +388,99 @@
         font-variant-numeric: tabular-nums;
       }
 
+      /* ── Session timer card ─────────────────── */
+      #session-clock {
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 34px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        color: var(--accent2);
+        text-align: center;
+        font-variant-numeric: tabular-nums;
+        line-height: 1;
+        margin-bottom: 5px;
+        text-shadow: 0 0 18px rgba(139,92,246,0.45);
+      }
+
+      #session-clock-sub {
+        font-size: 10px;
+        color: var(--muted);
+        text-align: center;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      /* ── Break overlay ───────────────────────── */
+      #break-overlay {
+        position: absolute;
+        inset: 0;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 18px;
+        background: rgba(8,8,13,0.93);
+        backdrop-filter: blur(14px);
+        z-index: 30;
+        animation: breakFadeIn 0.5s ease;
+      }
+
+      @keyframes breakFadeIn {
+        from { opacity: 0; }
+        to   { opacity: 1; }
+      }
+
+      #break-overlay.visible { display: flex; }
+
+      #break-icon {
+        font-size: 52px;
+        line-height: 1;
+        animation: breakBounce 2s ease infinite;
+      }
+
+      @keyframes breakBounce {
+        0%, 100% { transform: translateY(0); }
+        50%       { transform: translateY(-8px); }
+      }
+
+      #break-title {
+        font-size: 44px;
+        font-weight: 900;
+        letter-spacing: 0.02em;
+        text-align: center;
+        background: linear-gradient(135deg, var(--accent2), #c084fc);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        line-height: 1.1;
+      }
+
+      #break-sub {
+        font-size: 15px;
+        color: var(--muted);
+        text-align: center;
+        max-width: 270px;
+        line-height: 1.65;
+      }
+
+      #break-dismiss {
+        margin-top: 6px;
+        padding: 11px 30px;
+        background: linear-gradient(135deg, var(--accent), var(--accent2));
+        color: #fff;
+        font-size: 13px;
+        font-weight: 600;
+        border: none;
+        border-radius: 10px;
+        cursor: pointer;
+        letter-spacing: 0.02em;
+        box-shadow: 0 4px 20px rgba(99,102,241,0.42);
+        transition: opacity 0.2s, transform 0.15s;
+      }
+
+      #break-dismiss:hover  { opacity: 0.88; transform: translateY(-1px); }
+      #break-dismiss:active { transform: translateY(0); }
+
       /* ── Alert toast ─────────────────────────── */
       #beep-toast {
         position: absolute;
@@ -472,10 +565,25 @@
         </div>
 
         <div id="beep-toast">🔔 Posture alert — sit up straight!</div>
+
+        <!-- Break overlay -->
+        <div id="break-overlay">
+          <div id="break-icon">☕</div>
+          <div id="break-title">Take a Break!</div>
+          <div id="break-sub">You've been sitting for a while. Stand up, stretch, and rest your eyes for a few minutes.</div>
+          <button id="break-dismiss">Resume Session</button>
+        </div>
       </div>
 
       <!-- Right panel -->
       <aside id="panel">
+
+        <!-- Session timer card -->
+        <div class="card" id="session-card">
+          <div class="card-label">Session Time</div>
+          <div id="session-clock">00:00:00</div>
+          <div id="session-clock-sub">Active while pose detected</div>
+        </div>
 
         <!-- Posture status card -->
         <div class="card" id="posture-card">
@@ -575,6 +683,10 @@
       const baselineEl      = document.getElementById('baseline-val');
       const eventsVal       = document.getElementById('events-val');
 
+      const sessionClockEl  = document.getElementById('session-clock');
+      const breakOverlay    = document.getElementById('break-overlay');
+      const breakDismiss    = document.getElementById('break-dismiss');
+
       /* ── Constants ───────────────────────────── */
       const NOSE            = 0;
       const L_SHOULDER      = 11;
@@ -597,6 +709,40 @@
 
       let frameCount        = 0;
       let lastFpsTime       = performance.now();
+
+      /* ── Session timer state ─────────────────── */
+      let sessionSecs       = 0;
+      let breakShown        = false;
+      let sessionInterval   = null;
+      const BREAK_SECS      = 60;
+
+      /* ── Session timer helpers ───────────────── */
+      function formatClock(secs) {
+        const h = Math.floor(secs / 3600);
+        const m = Math.floor((secs % 3600) / 60);
+        const s = secs % 60;
+        return [h, m, s].map(v => String(v).padStart(2, '0')).join(':');
+      }
+
+      function startSessionTimer() {
+        if (sessionInterval) return;
+        sessionInterval = setInterval(() => {
+          if (!latestLandmarks) return;   // only tick while pose is detected
+          sessionSecs++;
+          sessionClockEl.textContent = formatClock(sessionSecs);
+          if (!breakShown && sessionSecs >= BREAK_SECS) {
+            breakShown = true;
+            breakOverlay.classList.add('visible');
+          }
+        }, 1000);
+      }
+
+      breakDismiss.addEventListener('click', () => {
+        breakOverlay.classList.remove('visible');
+        sessionSecs  = 0;
+        breakShown   = false;
+        sessionClockEl.textContent = formatClock(0);
+      });
 
       /* ── Audio context (lazy-created on user gesture) */
       let audioCtx = null;
@@ -903,6 +1049,7 @@
             setStatus('active', 'Detecting');
             startOverlay.classList.add('hidden');
             calibrateBtn.classList.add('visible');
+            startSessionTimer();
           })
           .catch((err) => {
             console.error(err);
