@@ -1,0 +1,21 @@
+{
+  "name": "Pose Detector",
+  "short_name": "PoseDetector",
+  "description": "Real-time posture correction and session-tracking app",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#08080d",
+  "theme_color": "#08080d",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' fill='%2308080d'/%3E%3Ccircle cx='96' cy='52' r='20' fill='%236c63ff'/%3E%3Cline x1='96' y1='72' x2='96' y2='130' stroke='%236c63ff' stroke-width='8'/%3E%3Cline x1='96' y1='95' x2='60' y2='115' stroke='%236c63ff' stroke-width='8'/%3E%3Cline x1='96' y1='95' x2='132' y2='115' stroke='%236c63ff' stroke-width='8'/%3E%3Cline x1='96' y1='130' x2='72' y2='160' stroke='%236c63ff' stroke-width='8'/%3E%3Cline x1='96' y1='130' x2='120' y2='160' stroke='%236c63ff' stroke-width='8'/%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' fill='%2308080d'/%3E%3Ccircle cx='256' cy='138' r='52' fill='%236c63ff'/%3E%3Cline x1='256' y1='190' x2='256' y2='346' stroke='%236c63ff' stroke-width='22'/%3E%3Cline x1='256' y1='252' x2='160' y2='306' stroke='%236c63ff' stroke-width='22'/%3E%3Cline x1='256' y1='252' x2='352' y2='306' stroke='%236c63ff' stroke-width='22'/%3E%3Cline x1='256' y1='346' x2='192' y2='426' stroke='%236c63ff' stroke-width='22'/%3E%3Cline x1='256' y1='346' x2='320' y2='426' stroke='%236c63ff' stroke-width='22'/%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml"
+    }
+  ]
+}
