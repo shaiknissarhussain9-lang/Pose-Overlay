@@ -655,6 +655,127 @@
         margin: 0;
       }
 
+      /* ── Stick figure character ─────────────────── */
+      .sf-scene {
+        position: relative;
+        width: 140px;
+        height: 150px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      /* Glowing breath background (used in deep-breathing step) */
+      .sf-breath-bg {
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        background: radial-gradient(circle, rgba(99,102,241,0.28), transparent 70%);
+        transform: scale(0.7);
+        opacity: 0;
+        pointer-events: none;
+      }
+
+      .stick-figure {
+        position: relative;
+        width: 80px;
+        height: 140px;
+        flex-shrink: 0;
+      }
+
+      .sf-head {
+        position: absolute;
+        top: 0; left: 50%;
+        transform: translateX(-50%);
+        width: 26px; height: 26px;
+        border-radius: 50%;
+        border: 3px solid #818cf8;
+      }
+
+      /* Vertical torso bar */
+      .sf-torso {
+        position: absolute;
+        top: 29px; left: 50%;
+        transform: translateX(-50%);
+        width: 4px; height: 46px;
+        background: #818cf8;
+        border-radius: 2px;
+      }
+
+      /* Horizontal shoulders / arms bar */
+      .sf-shoulders {
+        position: absolute;
+        top: 38px; left: 50%;
+        transform: translateX(-50%);
+        width: 60px; height: 4px;
+        background: #818cf8;
+        border-radius: 2px;
+      }
+
+      /* Two angled legs from the torso base */
+      .sf-leg-left,
+      .sf-leg-right {
+        position: absolute;
+        top: 73px; left: calc(50% - 2px);
+        width: 4px; height: 42px;
+        background: #818cf8;
+        border-radius: 2px;
+        transform-origin: top center;
+      }
+      .sf-leg-left  { transform: rotate(20deg); }
+      .sf-leg-right { transform: rotate(-20deg); }
+
+      /* ── Step 1: Neck Rolls ─────────────────────── */
+      /* Head traces a slow oval path */
+      .sf-anim-neck .sf-head {
+        animation: sfNeckRoll 3s ease-in-out infinite;
+      }
+      @keyframes sfNeckRoll {
+        0%   { transform: translate(calc(-50% +  0px),   0px); }
+        25%  { transform: translate(calc(-50% + 10px),  -5px); }
+        50%  { transform: translate(calc(-50% +  0px), -11px); }
+        75%  { transform: translate(calc(-50% - 10px),  -5px); }
+        100% { transform: translate(calc(-50% +  0px),   0px); }
+      }
+
+      /* ── Step 2: Shoulder Shrugs ───────────────── */
+      /* Shoulders bar bounces upward rhythmically */
+      .sf-anim-shrug .sf-shoulders {
+        animation: sfShrug 1.6s ease-in-out infinite;
+      }
+      @keyframes sfShrug {
+        0%, 100% { transform: translateX(-50%) translateY(0px);   }
+        40%, 60%  { transform: translateX(-50%) translateY(-15px); }
+      }
+
+      /* ── Step 3: Deep Breathing ────────────────── */
+      /* Torso widens like an expanding chest */
+      .sf-anim-breathe .sf-torso {
+        transform-origin: top center;
+        animation: sfChest 5s ease-in-out infinite;
+      }
+      @keyframes sfChest {
+        0%, 100% { transform: translateX(-50%) scaleX(1);   }
+        50%       { transform: translateX(-50%) scaleX(2.6); }
+      }
+      /* Arms also spread as chest expands */
+      .sf-anim-breathe .sf-shoulders {
+        animation: sfArmsSpread 5s ease-in-out infinite;
+      }
+      @keyframes sfArmsSpread {
+        0%, 100% { transform: translateX(-50%) scaleX(1);   }
+        50%       { transform: translateX(-50%) scaleX(1.55); }
+      }
+      /* Background glow pulses with breath */
+      .sf-anim-breathe .sf-breath-bg {
+        animation: sfBreathGlow 5s ease-in-out infinite;
+      }
+      @keyframes sfBreathGlow {
+        0%, 100% { transform: scale(0.75); opacity: 0.12; }
+        50%       { transform: scale(1.4);  opacity: 0.62; }
+      }
+
       /* Step name & countdown */
       #break-step-name {
         font-size: 20px;
@@ -1021,23 +1142,18 @@
       const BREAK_STEPS = [
         {
           name: 'Neck Rolls',
-          emoji: '🔄',
-          gifClass: 'break-gif-neck',
-          instruction: 'Slowly roll your head in a full circle — 3 times each direction.',
-          type: 'gif'
+          sfClass: 'sf-anim-neck',
+          instruction: 'Slowly roll your head in a full circle — 3 times each direction.'
         },
         {
           name: 'Shoulder Shrugs',
-          emoji: '🤷',
-          gifClass: 'break-gif-shoulder',
-          instruction: 'Lift both shoulders to your ears, hold 2 s, then release. Repeat 5 times.',
-          type: 'gif'
+          sfClass: 'sf-anim-shrug',
+          instruction: 'Lift both shoulders to your ears, hold 2 s, then release. Repeat 5 times.'
         },
         {
           name: 'Deep Breathing',
-          emoji: '🫁',
-          instruction: 'Breathe in as the circle expands. Breathe out as it contracts.',
-          type: 'breathe'
+          sfClass: 'sf-anim-breathe',
+          instruction: 'Breathe in as the figure expands. Breathe out as it contracts.'
         }
       ];
       const STEP_SECS = 10;   // seconds per step
@@ -1151,18 +1267,14 @@
 
       /* ── Micro-break logic ────────────────────────── */
       function buildStepVisual(step) {
-        if (step.type === 'breathe') {
-          return `<div class="breathe-wrap">
-            <div class="breathe-circle"></div>
-            <p class="breathe-label">Breathe with the circle</p>
-          </div>`;
-        }
-        return `<div class="break-gif-wrap">
-          <img class="break-gif ${step.gifClass}" src="" alt="${step.name}">
-          <div class="break-gif-placeholder">
-            <span class="break-gif-emoji">${step.emoji}</span>
-            <p>${step.instruction}</p>
-            <small>Replace &lt;img class="${step.gifClass}"&gt; src with your GIF</small>
+        return `<div class="sf-scene">
+          <div class="sf-breath-bg"></div>
+          <div class="stick-figure ${step.sfClass}">
+            <div class="sf-head"></div>
+            <div class="sf-torso"></div>
+            <div class="sf-shoulders"></div>
+            <div class="sf-leg-left"></div>
+            <div class="sf-leg-right"></div>
           </div>
         </div>`;
       }
