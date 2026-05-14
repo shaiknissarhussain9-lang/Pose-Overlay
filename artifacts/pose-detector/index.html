@@ -1213,6 +1213,10 @@
       let hasSpoken       = false;  // 20 s voice alert — once per slouch event
       let badEventCount   = 0;
 
+      const SMOOTHING_FRAMES = 15;
+      let recentDistances  = [];   // rolling window — nose-to-shoulder smoothing
+      let recentFaceWidths = [];   // rolling window — face-width (eye distance) smoothing
+
       let frameCount        = 0;
       let lastFpsTime       = performance.now();
 
@@ -1460,15 +1464,20 @@
           return;
         }
 
-        const fw = getFaceWidth(lm);
+        const rawFw = getFaceWidth(lm);
 
         /* Ears not visible — treat as safe */
-        if (fw === null) {
+        if (rawFw === null) {
           eyeWarn.classList.remove('visible');
           tooCloseStart      = null;
           tooCloseNotifFired = false;
           return;
         }
+
+        /* Smooth face width over SMOOTHING_FRAMES to kill proximity jitter */
+        recentFaceWidths.push(rawFw);
+        if (recentFaceWidths.length > SMOOTHING_FRAMES) recentFaceWidths.shift();
+        const fw = recentFaceWidths.reduce((s, v) => s + v, 0) / recentFaceWidths.length;
 
         const tooClose = fw / baselineFaceWidth > EYE_DIST_THRESH;
 
@@ -1639,6 +1648,9 @@
             const fw = getFaceWidth(landmarks);
             if (fw !== null && fw > 0) baselineFaceWidth = fw;
 
+            /* Clear smoothing windows so stale pre-calibration frames don't bias readings */
+            recentDistances  = [];
+            recentFaceWidths = [];
             pendingCalibrate = false;
             calibrateBtn.classList.add('flash');
             setTimeout(() => calibrateBtn.classList.remove('flash'), 650);
@@ -1724,7 +1736,17 @@
         }
 
         lmVal.textContent = visCount;
-        updatePostureBanner(getNoseShoulderDist(landmarks), nowMs);
+
+        /* Smooth nose-shoulder distance over SMOOTHING_FRAMES to kill threshold jitter */
+        const rawDist = getNoseShoulderDist(landmarks);
+        if (rawDist !== null) {
+          recentDistances.push(rawDist);
+          if (recentDistances.length > SMOOTHING_FRAMES) recentDistances.shift();
+        }
+        const avgDist = recentDistances.length > 0
+          ? recentDistances.reduce((s, v) => s + v, 0) / recentDistances.length
+          : null;
+        updatePostureBanner(avgDist, nowMs);
         updateEyeWarning(landmarks);
         updateFps();
       }
@@ -1807,10 +1829,12 @@
         latestLandmarks = null;
 
         /* Clear bad-posture state */
-        slouchStartTime = null;
-        hasBeeped       = false;
-        hasNotified     = false;
-        hasSpoken       = false;
+        slouchStartTime  = null;
+        hasBeeped        = false;
+        hasNotified      = false;
+        hasSpoken        = false;
+        recentDistances  = [];
+        recentFaceWidths = [];
         updateGauge();
 
         /* Clear micro-break routine and overlay */
