@@ -724,6 +724,46 @@
         return [h, m, s].map(v => String(v).padStart(2, '0')).join(':');
       }
 
+      /* ── Break chime (distinct from bad-posture beep) ──
+         Plays a gentle three-note ascending chime: C5 → E5 → G5            */
+      function chimeBreak() {
+        try {
+          const ac = getAudioCtx();
+          const notes = [523.25, 659.25, 783.99];   // C5, E5, G5
+          notes.forEach((freq, i) => {
+            const osc  = ac.createOscillator();
+            const gain = ac.createGain();
+            osc.connect(gain);
+            gain.connect(ac.destination);
+            osc.type = 'triangle';
+            osc.frequency.value = freq;
+            const t0 = ac.currentTime + i * 0.28;
+            gain.gain.setValueAtTime(0.0001, t0);
+            gain.gain.exponentialRampToValueAtTime(0.22, t0 + 0.03);
+            gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.7);
+            osc.start(t0);
+            osc.stop(t0 + 0.75);
+          });
+        } catch (e) { /* silently ignore */ }
+      }
+
+      /* ── Desktop notification ─────────────────── */
+      function requestNotifPermission() {
+        if ('Notification' in window && Notification.permission === 'default') {
+          Notification.requestPermission();
+        }
+      }
+
+      function sendBreakNotification() {
+        if (!('Notification' in window)) return;
+        if (Notification.permission === 'granted') {
+          new Notification('Session Complete!', {
+            body: 'Time to stretch. Stand up, move around, and rest your eyes.',
+            icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><text y="26" font-size="28">☕</text></svg>'
+          });
+        }
+      }
+
       function startSessionTimer() {
         if (sessionInterval) return;
         sessionInterval = setInterval(() => {
@@ -733,6 +773,8 @@
           if (!breakShown && sessionSecs >= BREAK_SECS) {
             breakShown = true;
             breakOverlay.classList.add('visible');
+            chimeBreak();
+            sendBreakNotification();
           }
         }, 1000);
       }
@@ -1058,6 +1100,9 @@
             errorOverlay.classList.add('visible');
           });
       }
+
+      /* ── Request notification permission on load ─ */
+      requestNotifPermission();
 
       /* ── Start button ─────────────────────────── */
       startBtn.addEventListener('click', () => {
