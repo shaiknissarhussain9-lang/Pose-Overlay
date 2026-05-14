@@ -889,6 +889,14 @@
       let tooCloseNotifFired  = false;  // one notification per continuous event
       let pendingCalibrate    = false;
 
+      /* ── Speech voices (async load) ─────────────── */
+      let availableVoices = [];
+      if ('speechSynthesis' in window) {
+        const loadVoices = () => { availableVoices = window.speechSynthesis.getVoices(); };
+        loadVoices();
+        window.speechSynthesis.onvoiceschanged = loadVoices;
+      }
+
       let badPostureStart     = null;   // timestamp when bad posture began
       let badSecs             = 0;
       let alertFired          = false;  // Level 1 beep (5 s) — once per event
@@ -1172,9 +1180,17 @@
           console.log('20 seconds reached: Attempting to speak');
           if ('speechSynthesis' in window) {
             window.speechSynthesis.cancel();   // clear any stuck items first
-            const utt = new SpeechSynthesisUtterance('Please get in good posture.');
-            utt.rate   = 0.95;
-            utt.pitch  = 1;
+            const utt = new SpeechSynthesisUtterance(
+              "Excuse me, gravity is winning! Let's sit up straight and show that screen who's boss."
+            );
+            /* Pick a gentle female voice if one is available */
+            const femaleKeywords = ['female', 'samantha', 'zira', 'google uk english female'];
+            const femaleVoice = availableVoices.find(v =>
+              femaleKeywords.some(kw => v.name.toLowerCase().includes(kw))
+            );
+            if (femaleVoice) utt.voice = femaleVoice;
+            utt.pitch  = 1.1;
+            utt.rate   = 0.9;
             utt.volume = 1;
             window.speechSynthesis.speak(utt);
           }
