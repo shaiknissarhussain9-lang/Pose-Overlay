@@ -1199,8 +1199,9 @@
       let latestLandmarks   = null;
       let baselineDistance  = null;
       let baselineFaceWidth   = null;
-      let distanceStartTime      = null;   // Date.now() when user first went too close
-      let isDistancePopupVisible = false;  // true once the 10-s popup has appeared
+      let distanceStartTime          = null;   // Date.now() when user first went too close
+      let isDistancePopupVisible     = false;  // true once the 10-s popup has appeared
+      let hasSentDistanceNotification = false; // fires native notification once per incident
       let pendingCalibrate    = false;
 
       /* ── Micro-break steps ───────────────────────── */
@@ -1507,9 +1508,10 @@
         /* Ears not visible — treat as safe */
         if (rawFw === null) {
           eyeWarn.classList.remove('visible');
-          distanceStartTime      = null;
-          isDistancePopupVisible = false;
           distancePopup.classList.remove('visible');
+          distanceStartTime           = null;
+          isDistancePopupVisible      = false;
+          hasSentDistanceNotification = false;
           return;
         }
 
@@ -1527,18 +1529,31 @@
           /* Start timer on first too-close frame */
           if (distanceStartTime === null) distanceStartTime = Date.now();
 
-          /* Show modal popup after 10 continuous seconds */
           const elapsed = (Date.now() - distanceStartTime) / 1000;
+
+          /* Show modal popup after 10 continuous seconds */
           if (elapsed >= 10 && !isDistancePopupVisible) {
             isDistancePopupVisible = true;
             distancePopup.classList.add('visible');
           }
+
+          /* Send native notification once per incident at 10 s */
+          if (elapsed >= 10 && !hasSentDistanceNotification) {
+            hasSentDistanceNotification = true;
+            if ('Notification' in window && Notification.permission === 'granted') {
+              new Notification('Too Close to Screen! 👀', {
+                body: 'Please move back to protect your eyes.',
+                icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><text y="26" font-size="28">👁️</text></svg>'
+              });
+            }
+          }
         } else {
-          /* Safe distance restored — hide banner and popup, reset state */
+          /* Safe distance restored — hide banner and popup, reset all state */
           eyeWarn.classList.remove('visible');
           distancePopup.classList.remove('visible');
-          distanceStartTime      = null;
-          isDistancePopupVisible = false;
+          distanceStartTime           = null;
+          isDistancePopupVisible      = false;
+          hasSentDistanceNotification = false;
         }
       }
 
@@ -1867,8 +1882,9 @@
         /* Clear eye-distance warning, popup, and their state */
         eyeWarn.classList.remove('visible');
         distancePopup.classList.remove('visible');
-        distanceStartTime      = null;
-        isDistancePopupVisible = false;
+        distanceStartTime           = null;
+        isDistancePopupVisible      = false;
+        hasSentDistanceNotification = false;
 
         /* Clear canvas */
         ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
@@ -1910,6 +1926,9 @@
         startOverlay.classList.add('hidden');
         setStatus('loading', 'Starting camera…');
         getAudioCtx();  // warm up AudioContext on user gesture
+        if ('Notification' in window && Notification.permission === 'default') {
+          Notification.requestPermission();
+        }
 
         /* Unlock Web Speech API on user gesture so the 10-s alert can play */
         if ('speechSynthesis' in window) {
