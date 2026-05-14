@@ -1180,9 +1180,7 @@
           console.log('20 seconds reached: Attempting to speak');
           if ('speechSynthesis' in window) {
             window.speechSynthesis.cancel();   // clear any stuck items first
-            const utt = new SpeechSynthesisUtterance(
-              "Excuse me, gravity is winning! Let's sit up straight and show that screen who's boss."
-            );
+            const utt = new SpeechSynthesisUtterance('Get in good posture, please.');
             /* Pick a gentle female voice if one is available */
             const femaleKeywords = ['female', 'samantha', 'zira', 'google uk english female'];
             const femaleVoice = availableVoices.find(v =>
