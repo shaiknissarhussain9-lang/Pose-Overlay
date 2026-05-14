@@ -103,6 +103,28 @@
       #calibrate-btn:active  { transform: scale(0.97); }
       #calibrate-btn.flash   { animation: calFlash 0.55s ease forwards; }
 
+      #stop-btn {
+        display: none;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 14px;
+        background: var(--surface2);
+        color: var(--text);
+        font-size: 12px;
+        font-weight: 600;
+        border: 1px solid var(--border2);
+        border-radius: 8px;
+        cursor: pointer;
+        letter-spacing: 0.02em;
+        transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.15s;
+      }
+
+      #stop-btn.visible  { display: flex; }
+      #stop-btn:hover    { background: rgba(239,68,68,0.12); color: var(--bad); border-color: rgba(239,68,68,0.35); }
+      #stop-btn:active   { transform: scale(0.97); }
+      #stop-btn.resuming { background: rgba(34,197,94,0.1); color: var(--good); border-color: rgba(34,197,94,0.35); }
+      #stop-btn.resuming:hover { background: rgba(34,197,94,0.18); }
+
       @keyframes calFlash {
         0%   { background: linear-gradient(135deg, var(--accent), var(--accent2)); }
         45%  { background: linear-gradient(135deg, #16a34a, var(--good)); box-shadow: 0 0 22px rgba(34,197,94,0.6); }
@@ -525,6 +547,13 @@
           <h1>Posture Tracker</h1>
         </div>
         <div id="header-right">
+          <button id="stop-btn">
+            <!-- icon swapped by JS -->
+            <svg id="stop-icon" width="12" height="12" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+              <rect x="5" y="5" width="14" height="14" rx="2"/>
+            </svg>
+            <span id="stop-label">Stop Tracking</span>
+          </button>
           <button id="calibrate-btn">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="3"/>
@@ -686,6 +715,10 @@
       const sessionClockEl  = document.getElementById('session-clock');
       const breakOverlay    = document.getElementById('break-overlay');
       const breakDismiss    = document.getElementById('break-dismiss');
+
+      const stopBtn         = document.getElementById('stop-btn');
+      const stopLabel       = document.getElementById('stop-label');
+      const stopIcon        = document.getElementById('stop-icon');
 
       /* ── Constants ───────────────────────────── */
       const NOSE            = 0;
@@ -1091,6 +1124,7 @@
             setStatus('active', 'Detecting');
             startOverlay.classList.add('hidden');
             calibrateBtn.classList.add('visible');
+            stopBtn.classList.add('visible');
             startSessionTimer();
           })
           .catch((err) => {
@@ -1100,6 +1134,58 @@
             errorOverlay.classList.add('visible');
           });
       }
+
+      /* ── Stop / Resume tracking ──────────────── */
+      const STOP_ICON_SVG   = '<rect x="5" y="5" width="14" height="14" rx="2"/>';
+      const RESUME_ICON_SVG = '<polygon points="6,4 20,12 6,20"/>';
+
+      let trackingStopped = false;
+
+      function stopTracking() {
+        trackingStopped = true;
+
+        if (camera) { camera.stop(); camera = null; }
+        pose = null;
+        latestLandmarks = null;
+
+        /* Clear bad-posture state */
+        badPostureStart = null;
+        updateGauge(performance.now());
+
+        /* Clear break overlay */
+        breakOverlay.classList.remove('visible');
+
+        /* Clear canvas */
+        ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+
+        /* Reset posture display */
+        postureStatusEl.className = 'prompt';
+        postureStatusEl.textContent = 'Tracking paused';
+        postureSubEl.textContent = 'Click Resume to continue';
+
+        setStatus('', 'Paused');
+        calibrateBtn.classList.remove('visible');
+
+        stopLabel.textContent = 'Resume Tracking';
+        stopIcon.innerHTML    = RESUME_ICON_SVG;
+        stopBtn.classList.add('resuming');
+      }
+
+      function resumeTracking() {
+        trackingStopped = false;
+        stopLabel.textContent = 'Stop Tracking';
+        stopIcon.innerHTML    = STOP_ICON_SVG;
+        stopBtn.classList.remove('resuming');
+        initMediaPipe();
+      }
+
+      stopBtn.addEventListener('click', () => {
+        if (trackingStopped) {
+          resumeTracking();
+        } else {
+          stopTracking();
+        }
+      });
 
       /* ── Request notification permission on load ─ */
       requestNotifPermission();
