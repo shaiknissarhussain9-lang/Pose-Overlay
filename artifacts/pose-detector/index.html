@@ -1179,6 +1179,32 @@
         const loadVoices = () => { availableVoices = window.speechSynthesis.getVoices(); };
         loadVoices();
         window.speechSynthesis.onvoiceschanged = loadVoices;
+
+        /* macOS Chrome suspends the speech engine after ~15 s of silence.
+           Calling resume() every 10 s keeps it permanently awake. */
+        setInterval(() => window.speechSynthesis.resume(), 10000);
+      }
+
+      /* Robust speak — works around macOS Chrome suspension bug.
+         1. resume() first to wake a suspended engine.
+         2. cancel() to clear any stuck queue.
+         3. 100 ms gap so cancel() settles before speak().
+         4. onerror retries once if the first attempt still fails. */
+      function robustSpeak(utt) {
+        if (!('speechSynthesis' in window)) return;
+        window.speechSynthesis.resume();
+        window.speechSynthesis.cancel();
+        utt.onerror = (e) => {
+          console.warn('Speech error:', e.error, '— retrying in 200 ms');
+          setTimeout(() => {
+            window.speechSynthesis.resume();
+            window.speechSynthesis.speak(utt);
+          }, 200);
+        };
+        setTimeout(() => {
+          window.speechSynthesis.resume();
+          window.speechSynthesis.speak(utt);
+        }, 100);
       }
 
       let badPostureStart     = null;   // timestamp when bad posture began
@@ -1534,7 +1560,6 @@
           slouchSpokeFired = true;
           console.log('20 seconds reached: Attempting to speak');
           if ('speechSynthesis' in window) {
-            window.speechSynthesis.cancel();   // clear any stuck items first
             const utt = new SpeechSynthesisUtterance('Get in good posture, please.');
             /* Pick a gentle female voice if one is available */
             const femaleKeywords = ['female', 'samantha', 'zira', 'google uk english female'];
@@ -1545,7 +1570,7 @@
             utt.pitch  = 1.1;
             utt.rate   = 0.9;
             utt.volume = 1;
-            window.speechSynthesis.speak(utt);
+            robustSpeak(utt);
           }
         }
       }
