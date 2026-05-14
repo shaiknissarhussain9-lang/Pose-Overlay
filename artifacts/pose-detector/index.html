@@ -884,8 +884,10 @@
       let camera            = null;
       let latestLandmarks   = null;
       let baselineDistance  = null;
-      let baselineFaceWidth = null;
-      let pendingCalibrate  = false;
+      let baselineFaceWidth   = null;
+      let tooCloseStart       = null;   // timestamp when user first went too close
+      let tooCloseNotifFired  = false;  // one notification per continuous event
+      let pendingCalibrate    = false;
 
       let badPostureStart   = null;   // timestamp when bad posture began
       let badSecs           = 0;
@@ -1062,19 +1064,47 @@
 
       /* Show / hide the eye-distance banner immediately based on current ratio. */
       function updateEyeWarning(lm) {
+        /* No baseline yet — stay silent */
         if (baselineFaceWidth === null) {
           eyeWarn.classList.remove('visible');
           return;
         }
+
         const fw = getFaceWidth(lm);
+
+        /* Ears not visible — treat as safe */
         if (fw === null) {
           eyeWarn.classList.remove('visible');
+          tooCloseStart      = null;
+          tooCloseNotifFired = false;
           return;
         }
-        if (fw / baselineFaceWidth > EYE_DIST_THRESH) {
+
+        const tooClose = fw / baselineFaceWidth > EYE_DIST_THRESH;
+
+        if (tooClose) {
+          /* Show banner immediately */
           eyeWarn.classList.add('visible');
+
+          /* Start (or continue) the 5-second notification timer */
+          const nowMs = performance.now();
+          if (tooCloseStart === null) tooCloseStart = nowMs;
+
+          const elapsed = (nowMs - tooCloseStart) / 1000;
+          if (elapsed >= 5 && !tooCloseNotifFired) {
+            tooCloseNotifFired = true;
+            if ('Notification' in window && Notification.permission === 'granted') {
+              new Notification('Hey there, Screen Smoocher! 💋', {
+                body: "We need to establish some boundaries. Please back up before your nose actually touches the glass! 👃🖥️",
+                icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><text y="26" font-size="28">👁️</text></svg>'
+              });
+            }
+          }
         } else {
+          /* Safe distance restored — hide banner and reset timer */
           eyeWarn.classList.remove('visible');
+          tooCloseStart      = null;
+          tooCloseNotifFired = false;
         }
       }
 
@@ -1358,8 +1388,10 @@
         /* Clear break overlay */
         breakOverlay.classList.remove('visible');
 
-        /* Clear eye-distance warning */
+        /* Clear eye-distance warning and its timer */
         eyeWarn.classList.remove('visible');
+        tooCloseStart      = null;
+        tooCloseNotifFired = false;
 
         /* Clear canvas */
         ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
