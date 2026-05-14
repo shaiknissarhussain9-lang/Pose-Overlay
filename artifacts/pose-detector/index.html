@@ -1045,6 +1045,7 @@
       let microBreakInterval = null;   // setInterval handle for the routine
       let microBreakStep     = 0;      // current step index (0-based)
       let microBreakTick     = 0;      // seconds elapsed in current step
+      let isBreakActive      = false;  // pause detection during micro-break
 
       /* ── Speech voices (async load) ─────────────── */
       let availableVoices = [];
@@ -1180,6 +1181,7 @@
       }
 
       function startMicroBreak() {
+        isBreakActive  = true;
         microBreakStep = 0;
         microBreakTick = 0;
         breakFinishBtn.style.display = 'none';
@@ -1214,6 +1216,7 @@
       }
 
       breakFinishBtn.addEventListener('click', () => {
+        isBreakActive  = false;
         clearInterval(microBreakInterval);
         microBreakInterval = null;
         breakOverlay.classList.remove('visible');
@@ -1464,6 +1467,7 @@
 
       /* ── Skeleton drawing ─────────────────────── */
       function drawResults(results) {
+        if (isBreakActive) return;
         ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
         latestLandmarks = results.poseLandmarks || null;
         const nowMs = performance.now();
