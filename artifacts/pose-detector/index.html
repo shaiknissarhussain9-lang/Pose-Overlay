@@ -888,6 +888,52 @@
         0%, 100% { box-shadow: 0 0 30px rgba(249,115,22,0.28); }
         50%       { box-shadow: 0 0 50px rgba(249,115,22,0.55); border-color: rgba(249,115,22,0.8); }
       }
+
+      /* ── Distance popup modal (10 s too-close delay) ── */
+      #distance-popup {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 9000;
+        background: rgba(0,0,0,0.72);
+        align-items: center;
+        justify-content: center;
+      }
+      #distance-popup.visible {
+        display: flex;
+      }
+      #distance-popup-inner {
+        background: #1c1917;
+        border: 2px solid rgba(251,146,60,0.6);
+        border-radius: 20px;
+        padding: 44px 56px;
+        text-align: center;
+        box-shadow: 0 0 60px rgba(249,115,22,0.35);
+        animation: distPopPulse 2s ease infinite;
+        max-width: 420px;
+        width: 90%;
+      }
+      #distance-popup-inner .dp-icon {
+        font-size: 56px;
+        line-height: 1;
+        margin-bottom: 18px;
+      }
+      #distance-popup-inner .dp-title {
+        font-size: 22px;
+        font-weight: 800;
+        color: #fb923c;
+        margin-bottom: 10px;
+        letter-spacing: 0.01em;
+      }
+      #distance-popup-inner .dp-body {
+        font-size: 15px;
+        color: #d6d3d1;
+        line-height: 1.6;
+      }
+      @keyframes distPopPulse {
+        0%, 100% { box-shadow: 0 0 60px rgba(249,115,22,0.35); }
+        50%       { box-shadow: 0 0 90px rgba(249,115,22,0.60); }
+      }
     </style>
   </head>
   <body>
@@ -955,6 +1001,15 @@
         </div>
 
         <div id="beep-toast">🔔 Posture alert — sit up straight!</div>
+
+        <!-- Eye distance popup modal (shown after 10 s too-close) -->
+        <div id="distance-popup">
+          <div id="distance-popup-inner">
+            <div class="dp-icon">👁️</div>
+            <div class="dp-title">Too Close to Screen!</div>
+            <div class="dp-body">Please move back to a comfortable distance to protect your eyes.</div>
+          </div>
+        </div>
 
         <!-- Eye distance warning -->
         <div id="eye-warn">
@@ -1125,6 +1180,7 @@
       const stopLabel       = document.getElementById('stop-label');
       const stopIcon        = document.getElementById('stop-icon');
       const eyeWarn         = document.getElementById('eye-warn');
+      const distancePopup   = document.getElementById('distance-popup');
 
       /* ── Constants ───────────────────────────── */
       const NOSE            = 0;
@@ -1143,8 +1199,8 @@
       let latestLandmarks   = null;
       let baselineDistance  = null;
       let baselineFaceWidth   = null;
-      let tooCloseStart       = null;   // timestamp when user first went too close
-      let tooCloseNotifFired  = false;  // one notification per continuous event
+      let distanceStartTime      = null;   // Date.now() when user first went too close
+      let isDistancePopupVisible = false;  // true once the 10-s popup has appeared
       let pendingCalibrate    = false;
 
       /* ── Micro-break steps ───────────────────────── */
@@ -1451,8 +1507,9 @@
         /* Ears not visible — treat as safe */
         if (rawFw === null) {
           eyeWarn.classList.remove('visible');
-          tooCloseStart      = null;
-          tooCloseNotifFired = false;
+          distanceStartTime      = null;
+          isDistancePopupVisible = false;
+          distancePopup.classList.remove('visible');
           return;
         }
 
@@ -1467,25 +1524,21 @@
           /* Show banner immediately */
           eyeWarn.classList.add('visible');
 
-          /* Start (or continue) the 5-second notification timer */
-          const nowMs = performance.now();
-          if (tooCloseStart === null) tooCloseStart = nowMs;
+          /* Start timer on first too-close frame */
+          if (distanceStartTime === null) distanceStartTime = Date.now();
 
-          const elapsed = (nowMs - tooCloseStart) / 1000;
-          if (elapsed >= 5 && !tooCloseNotifFired) {
-            tooCloseNotifFired = true;
-            if ('Notification' in window && Notification.permission === 'granted') {
-              new Notification('Error 413: Face Too Close 🚨', {
-                body: "You are getting a little too close to the codebase! Please back up a few inches to protect your eyes. Your retinas will thank you. 👀",
-                icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><text y="26" font-size="28">👁️</text></svg>'
-              });
-            }
+          /* Show modal popup after 10 continuous seconds */
+          const elapsed = (Date.now() - distanceStartTime) / 1000;
+          if (elapsed >= 10 && !isDistancePopupVisible) {
+            isDistancePopupVisible = true;
+            distancePopup.classList.add('visible');
           }
         } else {
-          /* Safe distance restored — hide banner and reset timer */
+          /* Safe distance restored — hide banner and popup, reset state */
           eyeWarn.classList.remove('visible');
-          tooCloseStart      = null;
-          tooCloseNotifFired = false;
+          distancePopup.classList.remove('visible');
+          distanceStartTime      = null;
+          isDistancePopupVisible = false;
         }
       }
 
@@ -1811,10 +1864,11 @@
         microBreakInterval = null;
         breakOverlay.classList.remove('visible');
 
-        /* Clear eye-distance warning and its timer */
+        /* Clear eye-distance warning, popup, and their state */
         eyeWarn.classList.remove('visible');
-        tooCloseStart      = null;
-        tooCloseNotifFired = false;
+        distancePopup.classList.remove('visible');
+        distanceStartTime      = null;
+        isDistancePopupVisible = false;
 
         /* Clear canvas */
         ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
