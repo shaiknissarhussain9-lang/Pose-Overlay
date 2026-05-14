@@ -432,6 +432,93 @@
         text-transform: uppercase;
       }
 
+      /* ── Session length control ──────────────── */
+      #session-length-wrap {
+        margin-top: 14px;
+        padding-top: 12px;
+        border-top: 1px solid var(--border);
+      }
+
+      #session-length-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        margin-bottom: 8px;
+      }
+
+      #session-length-label {
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      #session-length-val {
+        font-size: 13px;
+        font-weight: 700;
+        color: var(--accent2);
+        font-variant-numeric: tabular-nums;
+      }
+
+      #session-length-slider {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 100%;
+        height: 4px;
+        border-radius: 4px;
+        background: linear-gradient(
+          to right,
+          var(--accent) 0%,
+          var(--accent) var(--fill, 13%),
+          var(--surface) var(--fill, 13%)
+        );
+        outline: none;
+        cursor: pointer;
+        transition: opacity 0.2s;
+      }
+
+      #session-length-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: var(--accent2);
+        box-shadow: 0 0 0 3px rgba(139,92,246,0.25);
+        cursor: pointer;
+        transition: box-shadow 0.15s;
+      }
+
+      #session-length-slider::-webkit-slider-thumb:hover {
+        box-shadow: 0 0 0 5px rgba(139,92,246,0.35);
+      }
+
+      #session-length-slider::-moz-range-thumb {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        border: none;
+        background: var(--accent2);
+        box-shadow: 0 0 0 3px rgba(139,92,246,0.25);
+        cursor: pointer;
+      }
+
+      #session-length-slider:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+      }
+
+      #session-length-slider:disabled::-webkit-slider-thumb { cursor: not-allowed; }
+
+      #session-length-hint {
+        margin-top: 6px;
+        font-size: 10px;
+        color: var(--muted);
+        text-align: center;
+        font-style: italic;
+      }
+
       /* ── Break overlay ───────────────────────── */
       #break-overlay {
         position: absolute;
@@ -612,6 +699,20 @@
           <div class="card-label">Session Time</div>
           <div id="session-clock">00:00:00</div>
           <div id="session-clock-sub">Active while pose detected</div>
+
+          <div id="session-length-wrap">
+            <div id="session-length-header">
+              <span id="session-length-label">Session Length</span>
+              <span id="session-length-val">8 min</span>
+            </div>
+            <input
+              type="range"
+              id="session-length-slider"
+              min="1" max="60" value="8"
+              step="1"
+            />
+            <div id="session-length-hint">Adjustable only when stopped</div>
+          </div>
         </div>
 
         <!-- Posture status card -->
@@ -712,9 +813,11 @@
       const baselineEl      = document.getElementById('baseline-val');
       const eventsVal       = document.getElementById('events-val');
 
-      const sessionClockEl  = document.getElementById('session-clock');
-      const breakOverlay    = document.getElementById('break-overlay');
-      const breakDismiss    = document.getElementById('break-dismiss');
+      const sessionClockEl    = document.getElementById('session-clock');
+      const breakOverlay      = document.getElementById('break-overlay');
+      const breakDismiss      = document.getElementById('break-dismiss');
+      const sessionLenSlider  = document.getElementById('session-length-slider');
+      const sessionLenVal     = document.getElementById('session-length-val');
 
       const stopBtn         = document.getElementById('stop-btn');
       const stopLabel       = document.getElementById('stop-label');
@@ -747,7 +850,22 @@
       let sessionSecs       = 0;
       let breakShown        = false;
       let sessionInterval   = null;
-      const BREAK_SECS      = 60;
+
+      /* Dynamic session length — reads slider, converts minutes → seconds */
+      function getBreakSecs() {
+        return parseInt(sessionLenSlider.value, 10) * 60;
+      }
+
+      /* Keep the slider's label and fill-track in sync */
+      function syncSliderUI() {
+        const mins = parseInt(sessionLenSlider.value, 10);
+        sessionLenVal.textContent = mins + ' min';
+        const pct = ((mins - 1) / (60 - 1)) * 100;
+        sessionLenSlider.style.setProperty('--fill', pct.toFixed(1) + '%');
+      }
+
+      sessionLenSlider.addEventListener('input', syncSliderUI);
+      syncSliderUI(); // initialise on load
 
       /* ── Session timer helpers ───────────────── */
       function formatClock(secs) {
@@ -803,7 +921,7 @@
           if (!latestLandmarks) return;   // only tick while pose is detected
           sessionSecs++;
           sessionClockEl.textContent = formatClock(sessionSecs);
-          if (!breakShown && sessionSecs >= BREAK_SECS) {
+          if (!breakShown && sessionSecs >= getBreakSecs()) {
             breakShown = true;
             breakOverlay.classList.add('visible');
             chimeBreak();
@@ -1125,6 +1243,7 @@
             startOverlay.classList.add('hidden');
             calibrateBtn.classList.add('visible');
             stopBtn.classList.add('visible');
+            sessionLenSlider.disabled = true;
             startSessionTimer();
           })
           .catch((err) => {
@@ -1165,6 +1284,8 @@
 
         setStatus('', 'Paused');
         calibrateBtn.classList.remove('visible');
+        sessionLenSlider.disabled = false;
+        syncSliderUI();
 
         stopLabel.textContent = 'Resume Tracking';
         stopIcon.innerHTML    = RESUME_ICON_SVG;
@@ -1173,6 +1294,7 @@
 
       function resumeTracking() {
         trackingStopped = false;
+        sessionLenSlider.disabled = true;
         stopLabel.textContent = 'Stop Tracking';
         stopIcon.innerHTML    = STOP_ICON_SVG;
         stopBtn.classList.remove('resuming');
