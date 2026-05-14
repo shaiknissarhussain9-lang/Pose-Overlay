@@ -740,34 +740,43 @@
       }
 
       /* ── Step 2: Shoulder Shrugs ───────────────── */
-      /* Shoulders bar bounces upward rhythmically */
+      /* Shoulders rise toward the ears; head barely moves */
       .sf-anim-shrug .sf-shoulders {
         animation: sfShrug 1.6s ease-in-out infinite;
       }
       @keyframes sfShrug {
         0%, 100% { transform: translateX(-50%) translateY(0px);   }
-        40%, 60%  { transform: translateX(-50%) translateY(-15px); }
+        40%, 60%  { transform: translateX(-50%) translateY(-20px); }
+      }
+      /* Head dips just slightly so shoulders visibly close the gap */
+      .sf-anim-shrug .sf-head {
+        animation: sfShrugHead 1.6s ease-in-out infinite;
+      }
+      @keyframes sfShrugHead {
+        0%, 100% { transform: translateX(-50%) translateY(0px); }
+        40%, 60%  { transform: translateX(-50%) translateY(4px); }
       }
 
       /* ── Step 3: Deep Breathing ────────────────── */
-      /* Torso widens like an expanding chest */
+      /* Whole figure gently inflates and deflates on each breath */
+      .sf-anim-breathe .stick-figure {
+        transform-origin: bottom center;
+        animation: sfInhale 5s ease-in-out infinite;
+      }
+      @keyframes sfInhale {
+        0%, 100% { transform: scale(1);    }
+        50%       { transform: scale(1.12); }
+      }
+      /* Torso stretches downward (belly expanding) */
       .sf-anim-breathe .sf-torso {
         transform-origin: top center;
-        animation: sfChest 5s ease-in-out infinite;
+        animation: sfBelly 5s ease-in-out infinite;
       }
-      @keyframes sfChest {
-        0%, 100% { transform: translateX(-50%) scaleX(1);   }
-        50%       { transform: translateX(-50%) scaleX(2.6); }
+      @keyframes sfBelly {
+        0%, 100% { transform: translateX(-50%) scaleY(1);    }
+        50%       { transform: translateX(-50%) scaleY(1.22); }
       }
-      /* Arms also spread as chest expands */
-      .sf-anim-breathe .sf-shoulders {
-        animation: sfArmsSpread 5s ease-in-out infinite;
-      }
-      @keyframes sfArmsSpread {
-        0%, 100% { transform: translateX(-50%) scaleX(1);   }
-        50%       { transform: translateX(-50%) scaleX(1.55); }
-      }
-      /* Background glow pulses with breath */
+      /* Background glow pulses with each breath */
       .sf-anim-breathe .sf-breath-bg {
         animation: sfBreathGlow 5s ease-in-out infinite;
       }
