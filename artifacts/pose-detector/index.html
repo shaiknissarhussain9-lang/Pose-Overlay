@@ -829,37 +829,6 @@
       #break-finish:hover  { opacity: 0.88; transform: translateY(-1px); }
       #break-finish:active { transform: translateY(0); }
 
-      /* ── Posture-check in-app notification toast (10 s fallback) ── */
-      #posture-notif-toast {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        min-width: 260px;
-        background: #1e1b4b;
-        border: 1px solid rgba(129,140,248,0.45);
-        border-radius: 12px;
-        padding: 14px 18px;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.55);
-        color: #e0e7ff;
-        font-size: 13px;
-        line-height: 1.5;
-        pointer-events: none;
-        opacity: 0;
-        transform: translateX(calc(100% + 28px));
-        transition: opacity 0.28s ease, transform 0.28s ease;
-        z-index: 9999;
-      }
-      #posture-notif-toast.show {
-        opacity: 1;
-        transform: translateX(0);
-      }
-      #posture-notif-toast .pnt-title {
-        font-size: 14px;
-        font-weight: 700;
-        color: #a5b4fc;
-        margin-bottom: 4px;
-      }
-
       /* ── Alert toast ─────────────────────────── */
       #beep-toast {
         position: absolute;
@@ -986,12 +955,6 @@
         </div>
 
         <div id="beep-toast">🔔 Posture alert — sit up straight!</div>
-
-        <!-- In-app fallback for the 10-second posture-check notification -->
-        <div id="posture-notif-toast">
-          <div class="pnt-title">Posture Check 🦴</div>
-          You have been slouching for 10 seconds. Time to sit up!
-        </div>
 
         <!-- Eye distance warning -->
         <div id="eye-warn">
@@ -1138,8 +1101,7 @@
       const gaugeTimeEl     = document.getElementById('gauge-time');
       const alertBar        = document.getElementById('alert-bar');
       const gaugeCaptionEl  = document.getElementById('gauge-caption');
-      const beepToast           = document.getElementById('beep-toast');
-      const postureNotifToast   = document.getElementById('posture-notif-toast');
+      const beepToast       = document.getElementById('beep-toast');
 
       const fpsVal          = document.getElementById('fps-val');
       const lmVal           = document.getElementById('lm-val');
@@ -1246,9 +1208,8 @@
       }
 
       let slouchStartTime = null;   // Date.now() timestamp when bad posture began
-      let hasBeeped       = false;  // 5 s beep — once per slouch event
-      let hasNotified     = false;  // 10 s desktop notification — once per slouch event
-      let hasSpoken       = false;  // 20 s voice alert — once per slouch event
+      let hasBeeped = false;  // 5 s beep — once per slouch event
+      let hasSpoken = false;  // 10 s voice alert — once per slouch event
       let badEventCount   = 0;
 
       const SMOOTHING_FRAMES = 15;
@@ -1311,32 +1272,6 @@
       }
 
       /* ── Desktop notification ─────────────────── */
-      function requestNotifPermission() {
-        if ('Notification' in window && Notification.permission === 'default') {
-          Notification.requestPermission();
-        }
-      }
-
-      let postureNotifTimer = null;
-      function showPostureNotifToast() {
-        if (postureNotifTimer) clearTimeout(postureNotifTimer);
-        postureNotifToast.classList.add('show');
-        postureNotifTimer = setTimeout(() => {
-          postureNotifToast.classList.remove('show');
-          postureNotifTimer = null;
-        }, 4000);
-      }
-
-      function sendBreakNotification() {
-        if (!('Notification' in window)) return;
-        if (Notification.permission === 'granted') {
-          new Notification('Session Complete!', {
-            body: 'Time to stretch. Stand up, move around, and rest your eyes.',
-            icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><text y="26" font-size="28">☕</text></svg>'
-          });
-        }
-      }
-
       function startSessionTimer() {
         if (sessionInterval) return;
         sessionInterval = setInterval(() => {
@@ -1346,7 +1281,6 @@
           if (!breakShown && sessionSecs >= getBreakSecs()) {
             breakShown = true;
             chimeBreak();
-            sendBreakNotification();
             startMicroBreak();
           }
         }, 1000);
@@ -1592,24 +1526,10 @@
           showToast();
         }
 
-        /* ── 10 s: desktop notification + guaranteed in-app toast ── */
-        if (elapsedSlouch >= 10 && !hasNotified) {
-          hasNotified = true;
-          /* Try native OS notification */
-          if ('Notification' in window && Notification.permission === 'granted') {
-            new Notification('Posture Check 🦴', {
-              body: 'You have been slouching for 10 seconds. Time to sit up!',
-              icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><text y="26" font-size="28">🦴</text></svg>'
-            });
-          }
-          /* Always show in-app toast as a guaranteed visual fallback */
-          showPostureNotifToast();
-        }
-
-        /* ── 20 s: voice reminder ────────────────── */
-        if (elapsedSlouch >= 20 && !hasSpoken) {
+        /* ── 10 s: voice reminder ───────────────── */
+        if (elapsedSlouch >= 10 && !hasSpoken) {
           hasSpoken = true;
-          console.log('20 seconds reached: Attempting to speak');
+          console.log('10 seconds reached: Attempting to speak');
           if ('speechSynthesis' in window) {
             const utt = new SpeechSynthesisUtterance('Get in good posture, please.');
             const femaleKeywords = ['female', 'samantha', 'zira', 'google uk english female'];
@@ -1633,7 +1553,7 @@
           postureStatusEl.className = 'prompt';
           postureStatusEl.textContent = 'Not calibrated';
           postureSubEl.textContent    = 'Sit straight and press Calibrate';
-          slouchStartTime = null; hasBeeped = false; hasNotified = false; hasSpoken = false;
+          slouchStartTime = null; hasBeeped = false; hasSpoken = false;
           updateGauge();
           return;
         }
@@ -1642,7 +1562,7 @@
           postureStatusEl.className = 'prompt';
           postureStatusEl.textContent = 'No detection';
           postureSubEl.textContent    = 'Make sure head & shoulders are visible';
-          slouchStartTime = null; hasBeeped = false; hasNotified = false; hasSpoken = false;
+          slouchStartTime = null; hasBeeped = false; hasSpoken = false;
           updateGauge();
           return;
         }
@@ -1665,7 +1585,6 @@
           postureSubEl.textContent    = `${Math.round(ratio * 100)}% of baseline`;
           slouchStartTime = null;
           hasBeeped       = false;
-          hasNotified     = false;
           hasSpoken       = false;
         }
 
@@ -1806,9 +1725,8 @@
       calibrateBtn.addEventListener('click', () => {
         /* Warm up AudioContext on the user gesture so beep works later */
         getAudioCtx();
-        requestNotifPermission();
 
-        /* Unlock Web Speech API on user gesture so the 20-s alert can play */
+        /* Unlock Web Speech API on user gesture so the 10-s alert can play */
         if ('speechSynthesis' in window) {
           window.speechSynthesis.cancel();
           window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
@@ -1882,9 +1800,8 @@
 
         /* Clear bad-posture state */
         slouchStartTime  = null;
-        hasBeeped        = false;
-        hasNotified      = false;
-        hasSpoken        = false;
+        hasBeeped = false;
+        hasSpoken = false;
         recentDistances  = [];
         recentFaceWidths = [];
         updateGauge();
@@ -1934,17 +1851,13 @@
         }
       });
 
-      /* ── Request notification permission on load ─ */
-      requestNotifPermission();
-
       /* ── Start button ─────────────────────────── */
       startBtn.addEventListener('click', () => {
         startOverlay.classList.add('hidden');
         setStatus('loading', 'Starting camera…');
-        getAudioCtx();           // warm up AudioContext on user gesture
-        requestNotifPermission(); // request notification permission on user gesture
+        getAudioCtx();  // warm up AudioContext on user gesture
 
-        /* Unlock Web Speech API on user gesture so the 20-s alert can play */
+        /* Unlock Web Speech API on user gesture so the 10-s alert can play */
         if ('speechSynthesis' in window) {
           window.speechSynthesis.cancel();
           window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
