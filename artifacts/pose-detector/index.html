@@ -1094,8 +1094,8 @@
           if (elapsed >= 5 && !tooCloseNotifFired) {
             tooCloseNotifFired = true;
             if ('Notification' in window && Notification.permission === 'granted') {
-              new Notification('Hey there, Screen Smoocher! 💋', {
-                body: "We need to establish some boundaries. Please back up before your nose actually touches the glass! 👃🖥️",
+              new Notification('Error 413: Face Too Close 🚨', {
+                body: "You are getting a little too close to the codebase! Please back up a few inches to protect your eyes. Your retinas will thank you. 👀",
                 icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><text y="26" font-size="28">👁️</text></svg>'
               });
             }
