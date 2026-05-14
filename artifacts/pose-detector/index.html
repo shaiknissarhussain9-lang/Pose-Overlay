@@ -1564,13 +1564,18 @@
             distancePopup.classList.add('visible');
           }
 
-          /* Send native notification once per incident at 10 s */
+          /* Send notification via Service Worker once per incident at 10 s.
+             Routing through the SW registration lets the notification surface
+             above other windows even when the PWA is in the background, and
+             requireInteraction prevents the OS from auto-dismissing it.      */
           if (elapsed >= 10 && !hasSentDistanceNotification) {
             hasSentDistanceNotification = true;
-            if ('Notification' in window && Notification.permission === 'granted') {
-              new Notification('Too Close to Screen! 👀', {
-                body: 'Please move back to protect your eyes.',
-                icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><text y="26" font-size="28">👁️</text></svg>'
+            if (navigator.serviceWorker && navigator.serviceWorker.ready) {
+              navigator.serviceWorker.ready.then(function(registration) {
+                registration.showNotification('Too Close to Screen! 👀', {
+                  body: 'Please move back to protect your eyes.',
+                  requireInteraction: true
+                });
               });
             }
           }
