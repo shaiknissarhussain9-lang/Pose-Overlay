@@ -1837,27 +1837,30 @@
       });
 
       /* ── MediaPipe init ───────────────────────── */
-      function initMediaPipe() {
+      /* ── MediaPipe Pose — initialised ONCE, never recreated ─────────
+         Re-creating the Pose instance after stop/resume causes an
+         Emscripten/WASM crash ("Module.arguments has been replaced").
+         We create it here at script-load time and reuse it forever.   */
+      pose = new Pose({
+        locateFile: (file) =>
+          `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`
+      });
+      pose.setOptions({
+        modelComplexity: 1,
+        smoothLandmarks: true,
+        enableSegmentation: false,
+        smoothSegmentation: false,
+        minDetectionConfidence: 0.5,
+        minTrackingConfidence: 0.5
+      });
+      pose.onResults(drawResults);
+
+      /* ── Start the webcam feed (called on first start and on resume) */
+      function startCamera() {
         setStatus('loading', 'Loading model…');
 
-        pose = new Pose({
-          locateFile: (file) =>
-            `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`
-        });
-
-        pose.setOptions({
-          modelComplexity: 1,
-          smoothLandmarks: true,
-          enableSegmentation: false,
-          smoothSegmentation: false,
-          minDetectionConfidence: 0.5,
-          minTrackingConfidence: 0.5
-        });
-
-        pose.onResults(drawResults);
-
         camera = new Camera(videoEl, {
-          onFrame: async () => { if (pose) await pose.send({ image: videoEl }); },
+          onFrame: async () => { await pose.send({ image: videoEl }); },
           width: 1280,
           height: 720
         });
@@ -1890,7 +1893,6 @@
         stopAntiSleepAudio();
 
         if (camera) { camera.stop(); camera = null; }
-        pose = null;
         latestLandmarks = null;
 
         /* Clear bad-posture state */
@@ -1937,7 +1939,7 @@
         stopLabel.textContent = 'Stop Tracking';
         stopIcon.innerHTML    = STOP_ICON_SVG;
         stopBtn.classList.remove('resuming');
-        initMediaPipe();
+        startCamera();
       }
 
       stopBtn.addEventListener('click', () => {
@@ -1967,7 +1969,7 @@
         navigator.mediaDevices.getUserMedia({ video: true })
           .then((stream) => {
             stream.getTracks().forEach(t => t.stop());
-            initMediaPipe();
+            startCamera();
           })
           .catch((err) => {
             console.error(err);
