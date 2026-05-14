@@ -614,6 +614,41 @@
         opacity: 1;
         transform: translateX(-50%) translateY(0);
       }
+
+      /* ── Eye distance warning ────────────────── */
+      #eye-warn {
+        position: absolute;
+        top: 16px;
+        left: 50%;
+        transform: translateX(-50%) translateY(-8px);
+        display: none;
+        align-items: center;
+        gap: 9px;
+        background: rgba(249,115,22,0.15);
+        border: 1.5px solid rgba(249,115,22,0.5);
+        border-radius: 12px;
+        padding: 10px 22px;
+        font-size: 14px;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+        color: #fb923c;
+        pointer-events: none;
+        z-index: 60;
+        white-space: nowrap;
+        box-shadow: 0 0 30px rgba(249,115,22,0.28);
+        animation: eyeWarnPulse 1.6s ease infinite;
+        transition: opacity 0.25s;
+      }
+
+      #eye-warn.visible {
+        display: flex;
+        transform: translateX(-50%) translateY(0);
+      }
+
+      @keyframes eyeWarnPulse {
+        0%, 100% { box-shadow: 0 0 30px rgba(249,115,22,0.28); }
+        50%       { box-shadow: 0 0 50px rgba(249,115,22,0.55); border-color: rgba(249,115,22,0.8); }
+      }
     </style>
   </head>
   <body>
@@ -681,6 +716,15 @@
         </div>
 
         <div id="beep-toast">🔔 Posture alert — sit up straight!</div>
+
+        <!-- Eye distance warning -->
+        <div id="eye-warn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+          Too Close to Screen!
+        </div>
 
         <!-- Break overlay -->
         <div id="break-overlay">
@@ -822,12 +866,16 @@
       const stopBtn         = document.getElementById('stop-btn');
       const stopLabel       = document.getElementById('stop-label');
       const stopIcon        = document.getElementById('stop-icon');
+      const eyeWarn         = document.getElementById('eye-warn');
 
       /* ── Constants ───────────────────────────── */
       const NOSE            = 0;
       const L_SHOULDER      = 11;
       const R_SHOULDER      = 12;
+      const LEFT_EAR        = 7;
+      const RIGHT_EAR       = 8;
       const SLOUCH_THRESH   = 0.85;
+      const EYE_DIST_THRESH = 1.30;   // 130 % of baseline face width
       const ALERT_SECS      = 5;
       const CIRC            = 2 * Math.PI * 60;  // ~376.99
 
@@ -836,6 +884,7 @@
       let camera            = null;
       let latestLandmarks   = null;
       let baselineDistance  = null;
+      let baselineFaceWidth = null;
       let pendingCalibrate  = false;
 
       let badPostureStart   = null;   // timestamp when bad posture began
@@ -1000,6 +1049,35 @@
         return (ls.y + rs.y) / 2 - nose.y;
       }
 
+      /* Returns geometric distance between ears in normalised coords.
+         As the user leans closer, their face fills more of the frame
+         and this value grows — perfect for proximity detection. */
+      function getFaceWidth(lm) {
+        const le = lm[LEFT_EAR], re = lm[RIGHT_EAR];
+        if (!le || !re) return null;
+        if (le.visibility < 0.3 || re.visibility < 0.3) return null;
+        const dx = le.x - re.x, dy = le.y - re.y;
+        return Math.sqrt(dx * dx + dy * dy);
+      }
+
+      /* Show / hide the eye-distance banner immediately based on current ratio. */
+      function updateEyeWarning(lm) {
+        if (baselineFaceWidth === null) {
+          eyeWarn.classList.remove('visible');
+          return;
+        }
+        const fw = getFaceWidth(lm);
+        if (fw === null) {
+          eyeWarn.classList.remove('visible');
+          return;
+        }
+        if (fw / baselineFaceWidth > EYE_DIST_THRESH) {
+          eyeWarn.classList.add('visible');
+        } else {
+          eyeWarn.classList.remove('visible');
+        }
+      }
+
       /* ── Gauge update ─────────────────────────── */
       function updateGauge(nowMs) {
         if (badPostureStart === null) {
@@ -1107,6 +1185,11 @@
           if (d !== null && d > 0) {
             baselineDistance = d;
             baselineEl.textContent = d.toFixed(3);
+
+            /* Also capture face-width baseline at the same moment */
+            const fw = getFaceWidth(landmarks);
+            if (fw !== null && fw > 0) baselineFaceWidth = fw;
+
             pendingCalibrate = false;
             calibrateBtn.classList.add('flash');
             setTimeout(() => calibrateBtn.classList.remove('flash'), 650);
@@ -1193,6 +1276,7 @@
 
         lmVal.textContent = visCount;
         updatePostureBanner(getNoseShoulderDist(landmarks), nowMs);
+        updateEyeWarning(landmarks);
         updateFps();
       }
 
@@ -1273,6 +1357,9 @@
 
         /* Clear break overlay */
         breakOverlay.classList.remove('visible');
+
+        /* Clear eye-distance warning */
+        eyeWarn.classList.remove('visible');
 
         /* Clear canvas */
         ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
