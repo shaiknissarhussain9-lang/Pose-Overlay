@@ -1207,12 +1207,11 @@
         }, 100);
       }
 
-      let badPostureStart     = null;   // timestamp when bad posture began
-      let badSecs             = 0;
-      let alertFired          = false;  // Level 1 beep (5 s) — once per event
-      let slouchNotifFired    = false;  // Level 2 notification (10 s) — once per event
-      let slouchSpokeFired    = false;  // Level 3 speech (20 s) — once per event
-      let badEventCount     = 0;
+      let slouchStartTime = null;   // Date.now() timestamp when bad posture began
+      let hasBeeped       = false;  // 5 s beep — once per slouch event
+      let hasNotified     = false;  // 10 s desktop notification — once per slouch event
+      let hasSpoken       = false;  // 20 s voice alert — once per slouch event
+      let badEventCount   = 0;
 
       let frameCount        = 0;
       let lastFpsTime       = performance.now();
@@ -1500,53 +1499,45 @@
       }
 
       /* ── Gauge update ─────────────────────────── */
-      function updateGauge(nowMs) {
-        if (badPostureStart === null) {
-          badSecs          = 0;
-          alertFired       = false;
-          slouchNotifFired = false;
-          slouchSpokeFired = false;
+      function updateGauge() {
+        if (slouchStartTime === null) {
+          /* No active slouch — reset gauge visuals only */
           gaugeArc.style.strokeDashoffset = CIRC;
-          gaugeArc.style.stroke = '#ef4444';
-          alertBar.style.width  = '0%';
-          gaugeTimeEl.className = '';
-          gaugeTimeEl.textContent = '0.0';
-          gaugeCaptionEl.textContent = 'Alert triggers at 5 s';
+          gaugeArc.style.stroke           = '#ef4444';
+          alertBar.style.width            = '0%';
+          gaugeTimeEl.className           = '';
+          gaugeTimeEl.textContent         = '0.0';
+          gaugeCaptionEl.textContent      = 'Alert triggers at 5 s';
           return;
         }
 
-        badSecs = (nowMs - badPostureStart) / 1000;
-        const clamped = Math.min(badSecs, ALERT_SECS);
+        const elapsedSlouch = (Date.now() - slouchStartTime) / 1000;
+        const clamped = Math.min(elapsedSlouch, ALERT_SECS);
         const frac    = clamped / ALERT_SECS;
 
-        const offset  = CIRC * (1 - frac);
-        gaugeArc.style.strokeDashoffset = offset;
+        gaugeArc.style.strokeDashoffset = CIRC * (1 - frac);
+        const g = Math.round(158 * (1 - frac));
+        gaugeArc.style.stroke = `rgb(239,${g},68)`;
+        alertBar.style.width  = (frac * 100) + '%';
 
-        // colour: amber → red
-        const r = 239, g = Math.round(158 * (1 - frac)), b = 68;
-        const col = `rgb(${r},${g},${b})`;
-        gaugeArc.style.stroke = col;
-
-        alertBar.style.width = (frac * 100) + '%';
-
-        gaugeTimeEl.textContent = badSecs.toFixed(1);
-        gaugeTimeEl.className   = 'bad';
-        gaugeCaptionEl.textContent = badSecs >= ALERT_SECS
+        gaugeTimeEl.textContent    = elapsedSlouch.toFixed(1);
+        gaugeTimeEl.className      = 'bad';
+        gaugeCaptionEl.textContent = elapsedSlouch >= ALERT_SECS
           ? '⚠ Alert fired!'
-          : `Alert triggers at 5 s`;
+          : 'Alert triggers at 5 s';
 
-        /* ── Level 1: 5 s — beep + toast (existing) ── */
-        if (badSecs >= ALERT_SECS && !alertFired) {
-          alertFired = true;
+        /* ── 5 s: beep ─────────────────────────── */
+        if (elapsedSlouch >= 5 && !hasBeeped) {
+          hasBeeped = true;
           badEventCount++;
           eventsVal.textContent = badEventCount;
           beep();
           showToast();
         }
 
-        /* ── Level 2: 10 s — desktop notification ─── */
-        if (badSecs >= 10 && !slouchNotifFired) {
-          slouchNotifFired = true;
+        /* ── 10 s: desktop notification ─────────── */
+        if (elapsedSlouch >= 10 && !hasNotified) {
+          hasNotified = true;
           if ('Notification' in window && Notification.permission === 'granted') {
             new Notification('Posture Check 🦴', {
               body: 'You have been slouching for 10 seconds. Time to sit up!',
@@ -1555,13 +1546,12 @@
           }
         }
 
-        /* ── Level 3: 20 s — spoken reminder ────── */
-        if (badSecs >= 20 && !slouchSpokeFired) {
-          slouchSpokeFired = true;
+        /* ── 20 s: voice reminder ────────────────── */
+        if (elapsedSlouch >= 20 && !hasSpoken) {
+          hasSpoken = true;
           console.log('20 seconds reached: Attempting to speak');
           if ('speechSynthesis' in window) {
             const utt = new SpeechSynthesisUtterance('Get in good posture, please.');
-            /* Pick a gentle female voice if one is available */
             const femaleKeywords = ['female', 'samantha', 'zira', 'google uk english female'];
             const femaleVoice = availableVoices.find(v =>
               femaleKeywords.some(kw => v.name.toLowerCase().includes(kw))
@@ -1583,8 +1573,8 @@
           postureStatusEl.className = 'prompt';
           postureStatusEl.textContent = 'Not calibrated';
           postureSubEl.textContent    = 'Sit straight and press Calibrate';
-          badPostureStart = null;
-          updateGauge(nowMs);
+          slouchStartTime = null; hasBeeped = false; hasNotified = false; hasSpoken = false;
+          updateGauge();
           return;
         }
 
@@ -1592,8 +1582,8 @@
           postureStatusEl.className = 'prompt';
           postureStatusEl.textContent = 'No detection';
           postureSubEl.textContent    = 'Make sure head & shoulders are visible';
-          badPostureStart = null;
-          updateGauge(nowMs);
+          slouchStartTime = null; hasBeeped = false; hasNotified = false; hasSpoken = false;
+          updateGauge();
           return;
         }
 
@@ -1604,18 +1594,22 @@
           postureStatusEl.textContent = '⚠ Bad Posture';
           postureSubEl.textContent    = `${Math.round(ratio * 100)}% of baseline`;
 
-          if (badPostureStart === null) {
-            badPostureStart = nowMs;
-            alertFired = false;
+          /* BAD POSTURE — start timer if not already running */
+          if (slouchStartTime === null) {
+            slouchStartTime = Date.now();
           }
         } else {
+          /* GOOD POSTURE — reset all slouch state */
           postureStatusEl.className = 'good';
           postureStatusEl.textContent = '✓ Good Posture';
           postureSubEl.textContent    = `${Math.round(ratio * 100)}% of baseline`;
-          badPostureStart = null;
+          slouchStartTime = null;
+          hasBeeped       = false;
+          hasNotified     = false;
+          hasSpoken       = false;
         }
 
-        updateGauge(nowMs);
+        updateGauge();
       }
 
       /* ── Skeleton drawing ─────────────────────── */
@@ -1813,10 +1807,11 @@
         latestLandmarks = null;
 
         /* Clear bad-posture state */
-        badPostureStart  = null;
-        slouchNotifFired = false;
-        slouchSpokeFired = false;
-        updateGauge(performance.now());
+        slouchStartTime = null;
+        hasBeeped       = false;
+        hasNotified     = false;
+        hasSpoken       = false;
+        updateGauge();
 
         /* Clear micro-break routine and overlay */
         clearInterval(microBreakInterval);
