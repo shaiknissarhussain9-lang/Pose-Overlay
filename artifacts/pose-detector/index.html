@@ -889,9 +889,11 @@
       let tooCloseNotifFired  = false;  // one notification per continuous event
       let pendingCalibrate    = false;
 
-      let badPostureStart   = null;   // timestamp when bad posture began
-      let badSecs           = 0;
-      let alertFired        = false;  // so beep fires once per continuous event
+      let badPostureStart     = null;   // timestamp when bad posture began
+      let badSecs             = 0;
+      let alertFired          = false;  // Level 1 beep (5 s) — once per event
+      let slouchNotifFired    = false;  // Level 2 notification (10 s) — once per event
+      let slouchSpokeFired    = false;  // Level 3 speech (20 s) — once per event
       let badEventCount     = 0;
 
       let frameCount        = 0;
@@ -1111,8 +1113,10 @@
       /* ── Gauge update ─────────────────────────── */
       function updateGauge(nowMs) {
         if (badPostureStart === null) {
-          badSecs = 0;
-          alertFired = false;
+          badSecs          = 0;
+          alertFired       = false;
+          slouchNotifFired = false;
+          slouchSpokeFired = false;
           gaugeArc.style.strokeDashoffset = CIRC;
           gaugeArc.style.stroke = '#ef4444';
           alertBar.style.width  = '0%';
@@ -1142,12 +1146,37 @@
           ? '⚠ Alert fired!'
           : `Alert triggers at 5 s`;
 
+        /* ── Level 1: 5 s — beep + toast (existing) ── */
         if (badSecs >= ALERT_SECS && !alertFired) {
           alertFired = true;
           badEventCount++;
           eventsVal.textContent = badEventCount;
           beep();
           showToast();
+        }
+
+        /* ── Level 2: 10 s — desktop notification ─── */
+        if (badSecs >= 10 && !slouchNotifFired) {
+          slouchNotifFired = true;
+          if ('Notification' in window && Notification.permission === 'granted') {
+            new Notification('Posture Check 🦴', {
+              body: 'You have been slouching for 10 seconds. Time to sit up!',
+              icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32"><text y="26" font-size="28">🦴</text></svg>'
+            });
+          }
+        }
+
+        /* ── Level 3: 20 s — spoken reminder ────── */
+        if (badSecs >= 20 && !slouchSpokeFired) {
+          slouchSpokeFired = true;
+          if ('speechSynthesis' in window) {
+            const utt = new SpeechSynthesisUtterance('Please get in good posture.');
+            utt.rate   = 0.95;
+            utt.pitch  = 1;
+            utt.volume = 1;
+            window.speechSynthesis.cancel();   // clear any queued speech first
+            window.speechSynthesis.speak(utt);
+          }
         }
       }
 
@@ -1382,7 +1411,9 @@
         latestLandmarks = null;
 
         /* Clear bad-posture state */
-        badPostureStart = null;
+        badPostureStart  = null;
+        slouchNotifFired = false;
+        slouchSpokeFired = false;
         updateGauge(performance.now());
 
         /* Clear break overlay */
