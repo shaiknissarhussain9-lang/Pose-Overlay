@@ -1429,6 +1429,32 @@
         return audioCtx;
       }
 
+      /* ── Silent audio wake-lock ───────────────────
+         Keeps the JS thread and camera loop fully alive
+         in background tabs by holding a live AudioContext
+         with a zero-gain oscillator. Completely inaudible. */
+      let wakeLockAudioCtx  = null;
+      let wakeLockOscillator = null;
+
+      function startAntiSleepAudio() {
+        try {
+          wakeLockAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          wakeLockOscillator = wakeLockAudioCtx.createOscillator();
+          const gainNode = wakeLockAudioCtx.createGain();
+          gainNode.gain.value = 0;   // completely silent
+          wakeLockOscillator.connect(gainNode);
+          gainNode.connect(wakeLockAudioCtx.destination);
+          wakeLockOscillator.start();
+        } catch (e) { /* silently ignore if unsupported */ }
+      }
+
+      function stopAntiSleepAudio() {
+        try {
+          if (wakeLockOscillator) { wakeLockOscillator.stop(); wakeLockOscillator = null; }
+          if (wakeLockAudioCtx)   { wakeLockAudioCtx.close();  wakeLockAudioCtx  = null; }
+        } catch (e) { /* silently ignore */ }
+      }
+
       function beep() {
         try {
           const ac  = getAudioCtx();
@@ -1861,6 +1887,7 @@
 
       function stopTracking() {
         trackingStopped = true;
+        stopAntiSleepAudio();
 
         if (camera) { camera.stop(); camera = null; }
         pose = null;
@@ -1925,7 +1952,8 @@
       startBtn.addEventListener('click', () => {
         startOverlay.classList.add('hidden');
         setStatus('loading', 'Starting camera…');
-        getAudioCtx();  // warm up AudioContext on user gesture
+        getAudioCtx();          // warm up AudioContext on user gesture
+        startAntiSleepAudio();  // silent wake-lock to prevent background tab throttling
         if ('Notification' in window && Notification.permission === 'default') {
           Notification.requestPermission();
         }
