@@ -1169,12 +1169,13 @@
         /* ── Level 3: 20 s — spoken reminder ────── */
         if (badSecs >= 20 && !slouchSpokeFired) {
           slouchSpokeFired = true;
+          console.log('20 seconds reached: Attempting to speak');
           if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();   // clear any stuck items first
             const utt = new SpeechSynthesisUtterance('Please get in good posture.');
             utt.rate   = 0.95;
             utt.pitch  = 1;
             utt.volume = 1;
-            window.speechSynthesis.cancel();   // clear any queued speech first
             window.speechSynthesis.speak(utt);
           }
         }
@@ -1344,6 +1345,12 @@
         /* Warm up AudioContext on the user gesture so beep works later */
         getAudioCtx();
 
+        /* Unlock Web Speech API on user gesture so the 20-s alert can play */
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+          window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
+        }
+
         if (!latestLandmarks) return;
         const d = getNoseShoulderDist(latestLandmarks);
         if (d === null || d <= 0) {
@@ -1466,7 +1473,13 @@
       startBtn.addEventListener('click', () => {
         startOverlay.classList.add('hidden');
         setStatus('loading', 'Starting camera…');
-        getAudioCtx();  // warm up on user gesture
+        getAudioCtx();  // warm up AudioContext on user gesture
+
+        /* Unlock Web Speech API on user gesture so the 20-s alert can play */
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+          window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
+        }
 
         navigator.mediaDevices.getUserMedia({ video: true })
           .then((stream) => {
