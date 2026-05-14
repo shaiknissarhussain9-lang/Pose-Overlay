@@ -520,75 +520,184 @@
       }
 
       /* ── Break overlay ───────────────────────── */
+      /* ── Micro-break overlay ───────────────────── */
       #break-overlay {
         position: absolute;
         inset: 0;
         display: none;
-        flex-direction: column;
         align-items: center;
         justify-content: center;
-        gap: 18px;
-        background: rgba(8,8,13,0.93);
-        backdrop-filter: blur(14px);
+        background: rgba(8,8,13,0.94);
+        backdrop-filter: blur(16px);
         z-index: 30;
-        animation: breakFadeIn 0.5s ease;
+        animation: breakFadeIn 0.45s ease;
       }
-
-      @keyframes breakFadeIn {
-        from { opacity: 0; }
-        to   { opacity: 1; }
-      }
-
       #break-overlay.visible { display: flex; }
 
-      #break-icon {
-        font-size: 52px;
-        line-height: 1;
-        animation: breakBounce 2s ease infinite;
+      @keyframes breakFadeIn {
+        from { opacity: 0; transform: scale(0.97); }
+        to   { opacity: 1; transform: scale(1); }
       }
 
-      @keyframes breakBounce {
-        0%, 100% { transform: translateY(0); }
-        50%       { transform: translateY(-8px); }
+      #break-modal {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 14px;
+        width: min(440px, 92%);
+        padding: 32px 28px 28px;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        box-shadow: 0 24px 80px rgba(0,0,0,0.6);
+        text-align: center;
       }
 
       #break-title {
-        font-size: 44px;
+        font-size: 22px;
         font-weight: 900;
         letter-spacing: 0.02em;
-        text-align: center;
         background: linear-gradient(135deg, var(--accent2), #c084fc);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
-        line-height: 1.1;
+        line-height: 1.2;
+        margin: 0;
       }
 
-      #break-sub {
-        font-size: 15px;
+      #break-step-indicator {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
         color: var(--muted);
-        text-align: center;
-        max-width: 270px;
-        line-height: 1.65;
       }
 
-      #break-dismiss {
-        margin-top: 6px;
-        padding: 11px 30px;
+      /* Step progress dots */
+      #break-dots {
+        display: flex;
+        gap: 8px;
+      }
+      .break-dot {
+        width: 8px; height: 8px;
+        border-radius: 50%;
+        background: var(--border);
+        transition: background 0.3s;
+      }
+      .break-dot.active  { background: var(--accent2); }
+      .break-dot.done    { background: var(--accent); }
+
+      /* Visual area */
+      #break-visual {
+        width: 100%;
+        min-height: 140px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+      }
+
+      /* GIF placeholder (shown when src is empty / broken) */
+      .break-gif-wrap {
+        position: relative;
+        width: 130px; height: 130px;
+      }
+      .break-gif {
+        width: 100%; height: 100%;
+        object-fit: contain;
+        border-radius: 12px;
+      }
+      .break-gif-placeholder {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        border: 2px dashed var(--border);
+        border-radius: 12px;
+        background: rgba(99,102,241,0.07);
+        padding: 10px;
+      }
+      .break-gif-placeholder .break-gif-emoji { font-size: 38px; line-height: 1; }
+      .break-gif-placeholder p {
+        font-size: 11px;
+        color: var(--muted);
+        line-height: 1.4;
+        margin: 0;
+      }
+      .break-gif-placeholder small {
+        font-size: 9px;
+        color: var(--border);
+        font-family: monospace;
+      }
+      /* Hide placeholder once a real GIF loads */
+      .break-gif:not([src=""]):not([src]) + .break-gif-placeholder { display: none; }
+
+      /* Breathing circle */
+      .breathe-wrap { display: flex; flex-direction: column; align-items: center; gap: 14px; }
+      .breathe-circle {
+        width: 90px; height: 90px;
+        border-radius: 50%;
+        background: radial-gradient(circle at 35% 35%, #818cf8, #6366f1 50%, #4f46e5);
+        box-shadow: 0 0 30px rgba(99,102,241,0.55);
+        animation: breathe 5s ease-in-out infinite;
+      }
+      @keyframes breathe {
+        0%, 100% { transform: scale(1);    opacity: 0.75; box-shadow: 0 0 20px rgba(99,102,241,0.4); }
+        50%       { transform: scale(1.45); opacity: 1;    box-shadow: 0 0 48px rgba(99,102,241,0.75); }
+      }
+      .breathe-label {
+        font-size: 12px;
+        color: var(--muted);
+        margin: 0;
+      }
+
+      /* Step name & countdown */
+      #break-step-name {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--text);
+      }
+      #break-step-instruction {
+        font-size: 12px;
+        color: var(--muted);
+        max-width: 300px;
+        line-height: 1.6;
+        margin: 0;
+      }
+      #break-countdown-wrap {
+        font-size: 13px;
+        color: var(--muted);
+      }
+      #break-countdown-num {
+        font-size: 28px;
+        font-weight: 800;
+        color: var(--accent2);
+        display: block;
+        line-height: 1;
+      }
+
+      /* Finish button */
+      #break-finish {
+        display: none;
+        margin-top: 4px;
+        padding: 12px 32px;
         background: linear-gradient(135deg, var(--accent), var(--accent2));
         color: #fff;
-        font-size: 13px;
-        font-weight: 600;
+        font-size: 14px;
+        font-weight: 700;
         border: none;
-        border-radius: 10px;
+        border-radius: 12px;
         cursor: pointer;
-        letter-spacing: 0.02em;
+        letter-spacing: 0.03em;
         box-shadow: 0 4px 20px rgba(99,102,241,0.42);
         transition: opacity 0.2s, transform 0.15s;
       }
-
-      #break-dismiss:hover  { opacity: 0.88; transform: translateY(-1px); }
-      #break-dismiss:active { transform: translateY(0); }
+      #break-finish:hover  { opacity: 0.88; transform: translateY(-1px); }
+      #break-finish:active { transform: translateY(0); }
 
       /* ── Alert toast ─────────────────────────── */
       #beep-toast {
@@ -726,12 +835,25 @@
           Too Close to Screen!
         </div>
 
-        <!-- Break overlay -->
+        <!-- Guided micro-break overlay -->
         <div id="break-overlay">
-          <div id="break-icon">☕</div>
-          <div id="break-title">Take a Break!</div>
-          <div id="break-sub">You've been sitting for a while. Stand up, stretch, and rest your eyes for a few minutes.</div>
-          <button id="break-dismiss">Resume Session</button>
+          <div id="break-modal">
+            <p id="break-title">Time for a Micro-Break!</p>
+            <div id="break-dots">
+              <div class="break-dot" id="break-dot-0"></div>
+              <div class="break-dot" id="break-dot-1"></div>
+              <div class="break-dot" id="break-dot-2"></div>
+            </div>
+            <div id="break-step-indicator">Step <span id="break-step-num">1</span> of 3</div>
+            <div id="break-visual"></div>
+            <div id="break-step-name">Neck Rolls</div>
+            <p id="break-step-instruction"></p>
+            <div id="break-countdown-wrap">
+              <span id="break-countdown-num">10</span>
+              <div>seconds remaining</div>
+            </div>
+            <button id="break-finish">Finish Break &amp; Resume</button>
+          </div>
         </div>
       </div>
 
@@ -858,8 +980,14 @@
       const eventsVal       = document.getElementById('events-val');
 
       const sessionClockEl    = document.getElementById('session-clock');
-      const breakOverlay      = document.getElementById('break-overlay');
-      const breakDismiss      = document.getElementById('break-dismiss');
+      const breakOverlay        = document.getElementById('break-overlay');
+      const breakFinishBtn      = document.getElementById('break-finish');
+      const breakVisual         = document.getElementById('break-visual');
+      const breakStepName       = document.getElementById('break-step-name');
+      const breakStepInstruct   = document.getElementById('break-step-instruction');
+      const breakStepNum        = document.getElementById('break-step-num');
+      const breakCountdownNum   = document.getElementById('break-countdown-num');
+      const breakDots           = [0,1,2].map(i => document.getElementById(`break-dot-${i}`));
       const sessionLenSlider  = document.getElementById('session-length-slider');
       const sessionLenVal     = document.getElementById('session-length-val');
 
@@ -888,6 +1016,35 @@
       let tooCloseStart       = null;   // timestamp when user first went too close
       let tooCloseNotifFired  = false;  // one notification per continuous event
       let pendingCalibrate    = false;
+
+      /* ── Micro-break steps ───────────────────────── */
+      const BREAK_STEPS = [
+        {
+          name: 'Neck Rolls',
+          emoji: '🔄',
+          gifClass: 'break-gif-neck',
+          instruction: 'Slowly roll your head in a full circle — 3 times each direction.',
+          type: 'gif'
+        },
+        {
+          name: 'Shoulder Shrugs',
+          emoji: '🤷',
+          gifClass: 'break-gif-shoulder',
+          instruction: 'Lift both shoulders to your ears, hold 2 s, then release. Repeat 5 times.',
+          type: 'gif'
+        },
+        {
+          name: 'Deep Breathing',
+          emoji: '🫁',
+          instruction: 'Breathe in as the circle expands. Breathe out as it contracts.',
+          type: 'breathe'
+        }
+      ];
+      const STEP_SECS = 10;   // seconds per step
+
+      let microBreakInterval = null;   // setInterval handle for the routine
+      let microBreakStep     = 0;      // current step index (0-based)
+      let microBreakTick     = 0;      // seconds elapsed in current step
 
       /* ── Speech voices (async load) ─────────────── */
       let availableVoices = [];
@@ -984,14 +1141,81 @@
           sessionClockEl.textContent = formatClock(sessionSecs);
           if (!breakShown && sessionSecs >= getBreakSecs()) {
             breakShown = true;
-            breakOverlay.classList.add('visible');
             chimeBreak();
             sendBreakNotification();
+            startMicroBreak();
           }
         }, 1000);
       }
 
-      breakDismiss.addEventListener('click', () => {
+      /* ── Micro-break logic ────────────────────────── */
+      function buildStepVisual(step) {
+        if (step.type === 'breathe') {
+          return `<div class="breathe-wrap">
+            <div class="breathe-circle"></div>
+            <p class="breathe-label">Breathe with the circle</p>
+          </div>`;
+        }
+        return `<div class="break-gif-wrap">
+          <img class="break-gif ${step.gifClass}" src="" alt="${step.name}">
+          <div class="break-gif-placeholder">
+            <span class="break-gif-emoji">${step.emoji}</span>
+            <p>${step.instruction}</p>
+            <small>Replace &lt;img class="${step.gifClass}"&gt; src with your GIF</small>
+          </div>
+        </div>`;
+      }
+
+      function renderBreakStep(idx) {
+        const step = BREAK_STEPS[idx];
+        breakStepNum.textContent      = idx + 1;
+        breakStepName.textContent     = step.name;
+        breakStepInstruct.textContent = step.instruction;
+        breakCountdownNum.textContent = STEP_SECS;
+        breakVisual.innerHTML         = buildStepVisual(step);
+
+        breakDots.forEach((dot, i) => {
+          dot.className = 'break-dot' + (i < idx ? ' done' : i === idx ? ' active' : '');
+        });
+      }
+
+      function startMicroBreak() {
+        microBreakStep = 0;
+        microBreakTick = 0;
+        breakFinishBtn.style.display = 'none';
+        renderBreakStep(0);
+        breakOverlay.classList.add('visible');
+
+        clearInterval(microBreakInterval);
+        microBreakInterval = setInterval(() => {
+          microBreakTick++;
+          const secsLeft = STEP_SECS - microBreakTick;
+          breakCountdownNum.textContent = Math.max(0, secsLeft);
+
+          if (microBreakTick >= STEP_SECS) {
+            microBreakTick = 0;
+            microBreakStep++;
+
+            if (microBreakStep >= BREAK_STEPS.length) {
+              /* All steps done — show finish button */
+              clearInterval(microBreakInterval);
+              microBreakInterval = null;
+              breakDots.forEach(dot => { dot.className = 'break-dot done'; });
+              breakStepName.textContent     = 'Great job! 🎉';
+              breakStepInstruct.textContent = 'You completed your micro-break routine.';
+              breakCountdownNum.textContent = '✓';
+              breakVisual.innerHTML         = '<span style="font-size:56px;line-height:1">🎉</span>';
+              breakFinishBtn.style.display  = 'block';
+            } else {
+              renderBreakStep(microBreakStep);
+            }
+          }
+        }, 1000);
+      }
+
+      breakFinishBtn.addEventListener('click', () => {
+        clearInterval(microBreakInterval);
+        microBreakInterval = null;
         breakOverlay.classList.remove('visible');
         sessionSecs  = 0;
         breakShown   = false;
@@ -1437,7 +1661,9 @@
         slouchSpokeFired = false;
         updateGauge(performance.now());
 
-        /* Clear break overlay */
+        /* Clear micro-break routine and overlay */
+        clearInterval(microBreakInterval);
+        microBreakInterval = null;
         breakOverlay.classList.remove('visible');
 
         /* Clear eye-distance warning and its timer */
