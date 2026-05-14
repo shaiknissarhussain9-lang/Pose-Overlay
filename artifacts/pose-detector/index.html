@@ -1162,7 +1162,8 @@
         {
           name: 'Deep Breathing',
           sfClass: 'sf-anim-breathe',
-          instruction: 'Breathe in as the figure expands. Breathe out as it contracts.'
+          type: 'breathe',
+          instruction: 'Breathe in as the circle expands. Breathe out as it contracts.'
         }
       ];
       const STEP_SECS = 10;   // seconds per step
@@ -1276,6 +1277,12 @@
 
       /* ── Micro-break logic ────────────────────────── */
       function buildStepVisual(step) {
+        if (step.type === 'breathe') {
+          return `<div class="breathe-wrap">
+            <div class="breathe-circle"></div>
+            <p class="breathe-label">Breathe with the circle</p>
+          </div>`;
+        }
         return `<div class="sf-scene">
           <div class="sf-breath-bg"></div>
           <div class="stick-figure ${step.sfClass}">
