@@ -722,15 +722,47 @@
         border-radius: 2px;
       }
 
-      /* Horizontal shoulders / arms bar */
-      .sf-shoulders {
+      /* Two independent arm divs — left and right — for per-arm animation */
+      .sf-arm-left {
         position: absolute;
-        top: 38px; left: 50%;
-        transform: translateX(-50%);
-        width: 60px; height: 4px;
+        top: 38px;
+        left: calc(50% - 30px);
+        width: 30px; height: 4px;
         background: #818cf8;
         border-radius: 2px;
+        transform-origin: right center;
       }
+      .sf-arm-right {
+        position: absolute;
+        top: 38px;
+        left: 50%;
+        width: 30px; height: 4px;
+        background: #818cf8;
+        border-radius: 2px;
+        transform-origin: left center;
+      }
+
+      /* neckRoll — applied directly to #head */
+      @keyframes neckRoll {
+        0%   { transform: translate(calc(-50% +  0px),   0px); }
+        25%  { transform: translate(calc(-50% + 10px),  -5px); }
+        50%  { transform: translate(calc(-50% +  0px), -11px); }
+        75%  { transform: translate(calc(-50% - 10px),  -5px); }
+        100% { transform: translate(calc(-50% +  0px),   0px); }
+      }
+      .neckRoll { animation: neckRoll 3s ease-in-out infinite; }
+
+      /* overheadReach — applied directly to #arm-left and #arm-right */
+      @keyframes overheadReachLeft {
+        0%, 100% { transform: rotate(0deg);   }
+        50%      { transform: rotate(-75deg); }
+      }
+      @keyframes overheadReachRight {
+        0%, 100% { transform: rotate(0deg);  }
+        50%      { transform: rotate(75deg); }
+      }
+      #arm-left.overheadReach  { animation: overheadReachLeft  1.5s ease-in-out infinite; }
+      #arm-right.overheadReach { animation: overheadReachRight 1.5s ease-in-out infinite; }
 
       /* Two angled legs from the torso base */
       .sf-leg-left,
@@ -1266,9 +1298,9 @@
           instruction: 'Slowly roll your head in a full circle — 3 times each direction.'
         },
         {
-          name: 'Shoulder Shrugs',
-          sfClass: 'sf-anim-shrug',
-          instruction: 'Lift both shoulders to your ears, hold 2 s, then release. Repeat 5 times.'
+          name: 'Overhead Reach',
+          sfClass: '',
+          instruction: 'Reach both arms straight overhead, hold 3 s, then lower. Repeat 4 times.'
         },
         {
           name: 'Deep Breathing',
@@ -1412,14 +1444,32 @@
         }
         return `<div class="sf-scene">
           <div class="sf-breath-bg"></div>
-          <div class="stick-figure ${step.sfClass}">
-            <div class="sf-head"></div>
+          <div class="stick-figure">
+            <div class="sf-head" id="head"></div>
             <div class="sf-torso"></div>
-            <div class="sf-shoulders"></div>
+            <div class="sf-arm-left" id="arm-left"></div>
+            <div class="sf-arm-right" id="arm-right"></div>
             <div class="sf-leg-left"></div>
             <div class="sf-leg-right"></div>
           </div>
         </div>`;
+      }
+
+      function applyBreakAnimations(idx) {
+        var head     = document.getElementById('head');
+        var armLeft  = document.getElementById('arm-left');
+        var armRight = document.getElementById('arm-right');
+        /* Strip any previous animation classes */
+        if (head)     head.classList.remove('neckRoll');
+        if (armLeft)  armLeft.classList.remove('overheadReach');
+        if (armRight) armRight.classList.remove('overheadReach');
+        /* Apply the class for this step */
+        if (idx === 0 && head) {
+          head.classList.add('neckRoll');
+        } else if (idx === 1 && armLeft && armRight) {
+          armLeft.classList.add('overheadReach');
+          armRight.classList.add('overheadReach');
+        }
       }
 
       function renderBreakStep(idx) {
@@ -1433,6 +1483,9 @@
         breakDots.forEach((dot, i) => {
           dot.className = 'break-dot' + (i < idx ? ' done' : i === idx ? ' active' : '');
         });
+
+        /* Explicitly apply animation classes to the rendered elements */
+        applyBreakAnimations(idx);
       }
 
       function startMicroBreak() {
@@ -1479,6 +1532,13 @@
         isBreakActive  = false;
         clearInterval(microBreakInterval);
         microBreakInterval = null;
+        /* Clean up any lingering animation classes */
+        var head = document.getElementById('head');
+        var armL = document.getElementById('arm-left');
+        var armR = document.getElementById('arm-right');
+        if (head) head.classList.remove('neckRoll');
+        if (armL) armL.classList.remove('overheadReach');
+        if (armR) armR.classList.remove('overheadReach');
         breakOverlay.classList.remove('visible');
         sessionSecs  = 0;
         breakShown   = false;
