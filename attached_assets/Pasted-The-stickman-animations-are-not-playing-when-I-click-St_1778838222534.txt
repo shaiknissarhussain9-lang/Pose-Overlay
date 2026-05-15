@@ -1,0 +1,51 @@
+The stickman animations are not playing when I click 'Start Exercises'. You must restore the stickman HTML, the CSS keyframes, and the JS sequence. Do not alter the posture camera tracking, the audio chime, or the timers. Implement this exactly:
+
+The CSS: Ensure these exact classes and keyframes are in the CSS:
+
+CSS
+@keyframes roll { 0% { transform: rotate(0deg); } 25% { transform: rotate(15deg); } 75% { transform: rotate(-15deg); } 100% { transform: rotate(0deg); } }
+@keyframes shrug { 0% { transform: translateY(0); } 50% { transform: translateY(-20px); } 100% { transform: translateY(0); } }
+@keyframes breathe { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+.neckRoll { animation: roll 2s infinite; }
+.shrugMove { animation: shrug 2s infinite; }
+.breatheMove { animation: breathe 3s infinite; }
+The HTML: Ensure the stickman character has these exact IDs so JavaScript can target them: <div id="head"></div>, <div id="torso"></div>, <div id="arm-left"></div>, <div id="arm-right"></div>.
+
+The JS Sequence: Replace the start-break-btn event listener with this exact logic to chain the exercises:
+
+JavaScript
+> document.getElementById('start-break-btn').addEventListener('click', () => {
+>   document.getElementById('session-complete-modal').style.display = 'none';
+>   const head = document.getElementById('head');
+>   const arms = [document.getElementById('arm-left'), document.getElementById('arm-right')];
+>   const torso = document.getElementById('torso');
+>   
+>   // 1. Neck Rolls (0 to 5 seconds)
+>   head.classList.add('neckRoll');
+>   
+>   // 2. Shrugs (5 to 10 seconds)
+>   setTimeout(() => {
+>     head.classList.remove('neckRoll');
+>     arms.forEach(arm => arm && arm.classList.add('shrugMove'));
+>   }, 5000);
+>   
+>   // 3. Breathing (10 to 15 seconds)
+>   setTimeout(() => {
+>     arms.forEach(arm => arm && arm.classList.remove('shrugMove'));
+>     torso.classList.add('breatheMove');
+>   }, 10000);
+>   
+>   // End Break (15 seconds)
+>   setTimeout(() => {
+>     torso.classList.remove('breatheMove');
+>     // Add logic here to restart the work session timer if desired
+>   }, 15000);
+> });
+> ```"*
+
+***
+
+### Why this guarantees a fix:
+Instead of asking the AI to "fix the animations," this prompt hardcodes the exact physics of the movement (the `@keyframes`), the exact hooks on the body parts (the HTML IDs), and a bulletproof Javascript `setTimeout` sequence that forces the browser to play them one after the other. 
+
+Once the AI applies this, start your session, wait for the chime, click the button,

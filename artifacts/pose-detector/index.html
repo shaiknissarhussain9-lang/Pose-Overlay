@@ -808,6 +808,27 @@
         40%, 60%  { transform: translateX(-50%) translateY(4px); }
       }
 
+      /* ── Direct-class exercise animations ──────── */
+      @keyframes roll {
+        0%   { transform: rotate(0deg);   }
+        25%  { transform: rotate(15deg);  }
+        75%  { transform: rotate(-15deg); }
+        100% { transform: rotate(0deg);   }
+      }
+      @keyframes shrug {
+        0%   { transform: translateY(0);     }
+        50%  { transform: translateY(-20px); }
+        100% { transform: translateY(0);     }
+      }
+      @keyframes breathe {
+        0%   { transform: scale(1);   }
+        50%  { transform: scale(1.1); }
+        100% { transform: scale(1);   }
+      }
+      .neckRoll    { animation: roll    2s ease-in-out infinite; }
+      .shrugMove   { animation: shrug   2s ease-in-out infinite; }
+      .breatheMove { animation: breathe 3s ease-in-out infinite; }
+
       /* ── Step 3: Deep Breathing ────────────────── */
       /* Whole figure gently inflates and deflates on each breath */
       .sf-anim-breathe .stick-figure {
@@ -1445,9 +1466,9 @@
         return `<div class="sf-scene">
           <div class="sf-breath-bg"></div>
           <div class="stick-figure">
-            <div class="sf-head" id="head"></div>
-            <div class="sf-torso"></div>
-            <div class="sf-arm-left" id="arm-left"></div>
+            <div class="sf-head"      id="head"></div>
+            <div class="sf-torso"     id="torso"></div>
+            <div class="sf-arm-left"  id="arm-left"></div>
             <div class="sf-arm-right" id="arm-right"></div>
             <div class="sf-leg-left"></div>
             <div class="sf-leg-right"></div>
@@ -1524,8 +1545,61 @@
       }
 
       startBreakBtn.addEventListener('click', () => {
-        sessionCompleteModal.style.display = 'none';
-        startMicroBreak();
+        document.getElementById('session-complete-modal').style.display = 'none';
+
+        /* Stop any existing micro-break interval and make the overlay visible */
+        clearInterval(microBreakInterval);
+        microBreakInterval = null;
+        isBreakActive = true;
+        breakOverlay.classList.add('visible');
+
+        /* Render the stick figure once so all IDs exist in the DOM */
+        breakVisual.innerHTML = `<div class="sf-scene">
+          <div class="sf-breath-bg"></div>
+          <div class="stick-figure">
+            <div class="sf-head"      id="head"></div>
+            <div class="sf-torso"     id="torso"></div>
+            <div class="sf-arm-left"  id="arm-left"></div>
+            <div class="sf-arm-right" id="arm-right"></div>
+            <div class="sf-leg-left"></div>
+            <div class="sf-leg-right"></div>
+          </div>
+        </div>`;
+        breakStepName.textContent = 'Exercise: Neck Rolls';
+        breakStepNum.textContent  = '1';
+
+        const head  = document.getElementById('head');
+        const arms  = [document.getElementById('arm-left'), document.getElementById('arm-right')];
+        const torso = document.getElementById('torso');
+
+        // 1. Neck Rolls (0 to 5 seconds)
+        head.classList.add('neckRoll');
+
+        // 2. Shrugs (5 to 10 seconds)
+        setTimeout(() => {
+          head.classList.remove('neckRoll');
+          breakStepName.textContent = 'Exercise: Shoulder Shrugs';
+          breakStepNum.textContent  = '2';
+          arms.forEach(arm => arm && arm.classList.add('shrugMove'));
+        }, 5000);
+
+        // 3. Breathing (10 to 15 seconds)
+        setTimeout(() => {
+          arms.forEach(arm => arm && arm.classList.remove('shrugMove'));
+          breakStepName.textContent = 'Exercise: Deep Breathing';
+          breakStepNum.textContent  = '3';
+          torso.classList.add('breatheMove');
+        }, 10000);
+
+        // End Break (15 seconds)
+        setTimeout(() => {
+          torso.classList.remove('breatheMove');
+          isBreakActive = false;
+          breakOverlay.classList.remove('visible');
+          sessionSecs = 0;
+          breakShown  = false;
+          sessionClockEl.textContent = formatClock(0);
+        }, 15000);
       });
 
       breakFinishBtn.addEventListener('click', () => {
