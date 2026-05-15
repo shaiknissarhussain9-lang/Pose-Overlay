@@ -722,6 +722,26 @@
         border-radius: 2px;
       }
 
+      /* ── Per-element overrides so animation transforms don't conflict ─ */
+      /* Positioning uses calc() instead of transform:translateX so the
+         animation keyframes have exclusive control of the transform property */
+      #head {
+        display: inline-block;
+        left: calc(50% - 13px); /* half of 26px width */
+        transform: none;
+        transform-origin: bottom center;
+      }
+      #torso {
+        display: inline-block;
+        left: calc(50% - 2px);  /* half of 4px width */
+        transform: none;
+        transform-origin: center center;
+        border-radius: 50%;
+      }
+      #arm-left, #arm-right {
+        display: inline-block;
+      }
+
       /* Two independent arm divs — left and right — for per-arm animation */
       .sf-arm-left {
         position: absolute;
@@ -1547,13 +1567,12 @@
       startBreakBtn.addEventListener('click', () => {
         document.getElementById('session-complete-modal').style.display = 'none';
 
-        /* Stop any existing micro-break interval and make the overlay visible */
+        /* Show break overlay and render stick figure so all IDs exist in the DOM */
         clearInterval(microBreakInterval);
         microBreakInterval = null;
         isBreakActive = true;
         breakOverlay.classList.add('visible');
 
-        /* Render the stick figure once so all IDs exist in the DOM */
         breakVisual.innerHTML = `<div class="sf-scene">
           <div class="sf-breath-bg"></div>
           <div class="stick-figure">
@@ -1568,14 +1587,25 @@
         breakStepName.textContent = 'Exercise: Neck Rolls';
         breakStepNum.textContent  = '1';
 
-        const head  = document.getElementById('head');
-        const arms  = [document.getElementById('arm-left'), document.getElementById('arm-right')];
-        const torso = document.getElementById('torso');
+        const head         = document.getElementById('head');
+        const arms         = [document.getElementById('arm-left'), document.getElementById('arm-right')];
+        const torso        = document.getElementById('torso');
+        const timerDisplay = breakCountdownNum; /* reuse the existing visible countdown element */
 
-        // 1. Neck Rolls (0 to 5 seconds)
+        let timeLeft = 15;
+        timerDisplay.innerText = `Break Time: ${timeLeft}s`;
+
+        /* Ticking clock */
+        const breakInterval = setInterval(() => {
+          timeLeft--;
+          if (timeLeft >= 0) timerDisplay.innerText = `Break Time: ${timeLeft}s`;
+          if (timeLeft <= 0) clearInterval(breakInterval);
+        }, 1000);
+
+        // 0-5s: Neck Rolls
         head.classList.add('neckRoll');
 
-        // 2. Shrugs (5 to 10 seconds)
+        // 5-10s: Shrugs
         setTimeout(() => {
           head.classList.remove('neckRoll');
           breakStepName.textContent = 'Exercise: Shoulder Shrugs';
@@ -1583,7 +1613,7 @@
           arms.forEach(arm => arm && arm.classList.add('shrugMove'));
         }, 5000);
 
-        // 3. Breathing (10 to 15 seconds)
+        // 10-15s: Breathing
         setTimeout(() => {
           arms.forEach(arm => arm && arm.classList.remove('shrugMove'));
           breakStepName.textContent = 'Exercise: Deep Breathing';
@@ -1591,9 +1621,11 @@
           torso.classList.add('breatheMove');
         }, 10000);
 
-        // End Break (15 seconds)
+        // End of Break
         setTimeout(() => {
           torso.classList.remove('breatheMove');
+          timerDisplay.innerText = 'Ready to Work!';
+          clearInterval(breakInterval);
           isBreakActive = false;
           breakOverlay.classList.remove('visible');
           sessionSecs = 0;
