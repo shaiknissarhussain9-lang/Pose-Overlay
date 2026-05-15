@@ -838,23 +838,23 @@
       /* ── Direct-class exercise animations ──────── */
       @keyframes roll {
         0%   { transform: rotate(0deg);   }
-        25%  { transform: rotate(15deg);  }
-        75%  { transform: rotate(-15deg); }
+        25%  { transform: rotate(20deg);  }
+        75%  { transform: rotate(-20deg); }
         100% { transform: rotate(0deg);   }
       }
       @keyframes shrug {
         0%   { transform: translateY(0);     }
-        50%  { transform: translateY(-20px); }
+        50%  { transform: translateY(-10px); }
         100% { transform: translateY(0);     }
       }
       @keyframes breathe {
-        0%   { transform: scale(1);   }
-        50%  { transform: scale(1.1); }
-        100% { transform: scale(1);   }
+        0%   { transform: scale(1);    }
+        50%  { transform: scale(1.15); }
+        100% { transform: scale(1);    }
       }
-      .neckRoll    { animation: roll    2s ease-in-out infinite; }
-      .shrugMove   { animation: shrug   2s ease-in-out infinite; }
-      .breatheMove { animation: breathe 3s ease-in-out infinite; }
+      .neckRoll    { animation: roll    2s   ease-in-out infinite; }
+      .shrugMove   { animation: shrug   1.5s ease-in-out infinite; }
+      .breatheMove { animation: breathe 3s   ease-in-out infinite; }
 
       /* ── Step 3: Deep Breathing ────────────────── */
       /* Whole figure gently inflates and deflates on each breath */
@@ -1580,16 +1580,13 @@
         isBreakActive = true;
         breakOverlay.classList.add('visible');
 
-        breakVisual.innerHTML = `<div class="sf-scene">
-          <div class="sf-breath-bg"></div>
-          <div class="stick-figure">
-            <div class="sf-head"      id="head"></div>
-            <div class="sf-torso"     id="torso"></div>
-            <div class="sf-arm-left"  id="arm-left"></div>
-            <div class="sf-arm-right" id="arm-right"></div>
-            <div class="sf-leg-left"></div>
-            <div class="sf-leg-right"></div>
-          </div>
+        breakVisual.innerHTML = `<div id="stickman-container" style="position:relative;width:100px;height:130px;margin:20px auto;transition:transform 0.3s ease;">
+          <div id="head"      style="position:absolute;top:0;left:35px;width:30px;height:30px;border:4px solid #8b5cf6;border-radius:50%;box-sizing:border-box;transform-origin:bottom center;"></div>
+          <div id="torso"     style="position:absolute;top:30px;left:48px;width:4px;height:50px;background-color:#8b5cf6;"></div>
+          <div id="arm-left"  style="position:absolute;top:35px;left:18px;width:30px;height:4px;background-color:#8b5cf6;transform-origin:right center;"></div>
+          <div id="arm-right" style="position:absolute;top:35px;left:52px;width:30px;height:4px;background-color:#8b5cf6;transform-origin:left center;"></div>
+          <div id="leg-left"  style="position:absolute;top:80px;left:30px;width:4px;height:40px;background-color:#8b5cf6;transform:rotate(20deg);transform-origin:top center;"></div>
+          <div id="leg-right" style="position:absolute;top:80px;left:48px;width:4px;height:40px;background-color:#8b5cf6;transform:rotate(-20deg);transform-origin:top center;"></div>
         </div>`;
         breakStepName.textContent = 'Exercise: Neck Rolls';
         breakStepNum.textContent  = '1';
@@ -1625,12 +1622,12 @@
           arms.forEach(arm => arm && arm.classList.remove('shrugMove'));
           breakStepName.textContent = 'Exercise: Deep Breathing';
           breakStepNum.textContent  = '3';
-          torso.classList.add('breatheMove');
+          document.getElementById('stickman-container').classList.add('breatheMove');
         }, 10000);
 
         // End of Break
         setTimeout(() => {
-          torso.classList.remove('breatheMove');
+          document.getElementById('stickman-container').classList.remove('breatheMove');
           timerDisplay.innerText = 'Ready to Work!';
           clearInterval(breakInterval);
           isBreakActive = false;
