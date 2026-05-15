@@ -1040,6 +1040,15 @@
         </div>
 
         <!-- Guided micro-break overlay -->
+        <!-- Session-complete modal -->
+        <div id="session-complete-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; justify-content: center; align-items: center;">
+          <div style="background: white; padding: 40px; border-radius: 12px; text-align: center; color: black; max-width: 400px;">
+            <h2 style="margin-top: 0;">Work Session Complete! ⏱️</h2>
+            <p>Great job! It's time to stretch and rest your eyes.</p>
+            <button id="start-break-btn" style="margin-top: 20px; padding: 12px 24px; font-size: 18px; background: #4CAF50; color: white; border: none; border-radius: 8px; cursor: pointer;">Start Exercises</button>
+          </div>
+        </div>
+
         <div id="break-overlay">
           <div id="break-modal">
             <p id="break-title">Time for a Micro-Break!</p>
@@ -1090,7 +1099,6 @@
           <div class="card-label">Posture Status</div>
           <div id="posture-status-text" class="prompt">Not calibrated</div>
           <div id="posture-sub-text">Sit straight and press Calibrate</div>
-          <button id="start-break-btn">Start Exercises</button>
         </div>
 
         <!-- Bad-posture duration gauge -->
@@ -1171,7 +1179,8 @@
 
       const postureStatusEl = document.getElementById('posture-status-text');
       const postureSubEl    = document.getElementById('posture-sub-text');
-      const startBreakBtn   = document.getElementById('start-break-btn');
+      const startBreakBtn        = document.getElementById('start-break-btn');
+      const sessionCompleteModal = document.getElementById('session-complete-modal');
 
       const gaugeArc        = document.getElementById('gauge-fill-arc');
       const gaugeTimeEl     = document.getElementById('gauge-time');
@@ -1358,15 +1367,13 @@
           sessionClockEl.textContent = formatClock(sessionSecs);
           if (!breakShown && sessionSecs >= getBreakSecs()) {
             breakShown = true;
-            chimeBreak();
-            /* Pause the session clock and prompt the user instead of
-               auto-launching the break sequence */
             clearInterval(sessionInterval);
             sessionInterval = null;
-            postureStatusEl.className   = 'prompt';
-            postureStatusEl.textContent = 'Session Complete! Ready for your break?';
-            postureSubEl.textContent    = '';
-            startBreakBtn.style.display = 'block';
+            /* Stop camera, anti-sleep audio, and all posture tracking */
+            stopTracking();
+            /* Play gentle chime then surface the session-complete modal */
+            playGentleChime();
+            sessionCompleteModal.style.display = 'flex';
           }
         }, 1000);
       }
@@ -1440,8 +1447,7 @@
       }
 
       startBreakBtn.addEventListener('click', () => {
-        startBreakBtn.style.display = 'none';
-        postureSubEl.textContent    = '';
+        sessionCompleteModal.style.display = 'none';
         startMicroBreak();
       });
 
