@@ -1165,6 +1165,30 @@
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/pose/pose.js" crossorigin="anonymous"></script>
 
     <script>
+      /* ── Session-end chime — defined first so the session timer can always call it ── */
+      window.playGentleChime = function() {
+        try {
+          var AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (!window._chimeAudioCtx) window._chimeAudioCtx = new AudioCtx();
+          var ac = window._chimeAudioCtx;
+          var resume = ac.state === 'suspended' ? ac.resume() : Promise.resolve();
+          resume.then(function() {
+            var osc  = ac.createOscillator();
+            var gain = ac.createGain();
+            osc.connect(gain);
+            gain.connect(ac.destination);
+            osc.type = 'sine';
+            var now = ac.currentTime;
+            osc.frequency.setValueAtTime(440,    now);        // A4
+            osc.frequency.setValueAtTime(554.37, now + 0.2);  // C#5
+            gain.gain.setValueAtTime(1, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
+            osc.start(now);
+            osc.stop(now + 1.5);
+          });
+        } catch(e) { /* silently ignore */ }
+      };
+
       /* ── DOM refs ─────────────────────────────── */
       const videoEl         = document.getElementById('webcam');
       const canvasEl        = document.getElementById('overlay-canvas');
