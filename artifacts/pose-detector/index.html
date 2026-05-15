@@ -1202,7 +1202,7 @@
       let baselineFaceWidth   = null;
       let distanceStartTime          = null;   // Date.now() when user first went too close
       let isDistancePopupVisible     = false;  // true once the 10-s popup has appeared
-      let hasSentDistanceNotification = false; // fires native notification once per incident
+      let hasSpokenDistance = false; // speaks voice alert once per too-close incident
       let pendingCalibrate    = false;
 
       /* ── Micro-break steps ───────────────────────── */
@@ -1536,9 +1536,9 @@
         if (rawFw === null) {
           eyeWarn.classList.remove('visible');
           distancePopup.classList.remove('visible');
-          distanceStartTime           = null;
-          isDistancePopupVisible      = false;
-          hasSentDistanceNotification = false;
+          distanceStartTime      = null;
+          isDistancePopupVisible = false;
+          hasSpokenDistance      = false;
           return;
         }
 
@@ -1564,28 +1564,20 @@
             distancePopup.classList.add('visible');
           }
 
-          /* Send notification via Service Worker once per incident at 10 s.
-             Routing through the SW registration lets the notification surface
-             above other windows even when the PWA is in the background, and
-             requireInteraction prevents the OS from auto-dismissing it.      */
-          if (elapsed >= 10 && !hasSentDistanceNotification) {
-            hasSentDistanceNotification = true;
-            if (navigator.serviceWorker && navigator.serviceWorker.ready) {
-              navigator.serviceWorker.ready.then(function(registration) {
-                registration.showNotification('Too Close to Screen! 👀', {
-                  body: 'Please move back to protect your eyes.',
-                  requireInteraction: true
-                });
-              });
-            }
+          /* Speak voice alert once per incident after 10 continuous seconds */
+          if (elapsed >= 10 && !hasSpokenDistance) {
+            hasSpokenDistance = true;
+            window.speechSynthesis.cancel();
+            const distUtter = new SpeechSynthesisUtterance('Get back, you are too close to the screen');
+            window.speechSynthesis.speak(distUtter);
           }
         } else {
           /* Safe distance restored — hide banner and popup, reset all state */
           eyeWarn.classList.remove('visible');
           distancePopup.classList.remove('visible');
-          distanceStartTime           = null;
-          isDistancePopupVisible      = false;
-          hasSentDistanceNotification = false;
+          distanceStartTime      = null;
+          isDistancePopupVisible = false;
+          hasSpokenDistance      = false;
         }
       }
 
@@ -1917,9 +1909,9 @@
         /* Clear eye-distance warning, popup, and their state */
         eyeWarn.classList.remove('visible');
         distancePopup.classList.remove('visible');
-        distanceStartTime           = null;
-        isDistancePopupVisible      = false;
-        hasSentDistanceNotification = false;
+        distanceStartTime      = null;
+        isDistancePopupVisible = false;
+        hasSpokenDistance      = false;
 
         /* Clear canvas */
         ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
@@ -1962,10 +1954,6 @@
         setStatus('loading', 'Starting camera…');
         getAudioCtx();          // warm up AudioContext on user gesture
         startAntiSleepAudio();  // silent wake-lock to prevent background tab throttling
-        if ('Notification' in window && Notification.permission === 'default') {
-          Notification.requestPermission();
-        }
-
         /* Unlock Web Speech API on user gesture so the 10-s alert can play */
         if ('speechSynthesis' in window) {
           window.speechSynthesis.cancel();
@@ -1986,12 +1974,6 @@
           });
       });
 
-      /* ── Service Worker registration (PWA) ───────── */
-      window.addEventListener('load', () => {
-        if ('serviceWorker' in navigator) {
-          navigator.serviceWorker.register('sw.js').catch(() => {});
-        }
-      });
     </script>
 
   </body>
