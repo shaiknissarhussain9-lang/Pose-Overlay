@@ -126,6 +126,24 @@
       #stop-btn.resuming { background: rgba(34,197,94,0.1); color: var(--good); border-color: rgba(34,197,94,0.35); }
       #stop-btn.resuming:hover { background: rgba(34,197,94,0.18); }
 
+      #start-break-btn {
+        display: none;
+        margin-top: 12px;
+        padding: 8px 18px;
+        background: linear-gradient(135deg, var(--accent), var(--accent2));
+        color: #fff;
+        font-size: 13px;
+        font-weight: 600;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        letter-spacing: 0.02em;
+        box-shadow: 0 2px 12px rgba(99,102,241,0.35);
+        transition: opacity 0.2s, transform 0.15s;
+      }
+      #start-break-btn:hover  { opacity: 0.85; transform: translateY(-1px); }
+      #start-break-btn:active { transform: scale(0.97); }
+
       @keyframes calFlash {
         0%   { background: linear-gradient(135deg, var(--accent), var(--accent2)); }
         45%  { background: linear-gradient(135deg, #16a34a, var(--good)); box-shadow: 0 0 22px rgba(34,197,94,0.6); }
@@ -1072,6 +1090,7 @@
           <div class="card-label">Posture Status</div>
           <div id="posture-status-text" class="prompt">Not calibrated</div>
           <div id="posture-sub-text">Sit straight and press Calibrate</div>
+          <button id="start-break-btn">Start Exercises</button>
         </div>
 
         <!-- Bad-posture duration gauge -->
@@ -1152,6 +1171,7 @@
 
       const postureStatusEl = document.getElementById('posture-status-text');
       const postureSubEl    = document.getElementById('posture-sub-text');
+      const startBreakBtn   = document.getElementById('start-break-btn');
 
       const gaugeArc        = document.getElementById('gauge-fill-arc');
       const gaugeTimeEl     = document.getElementById('gauge-time');
@@ -1339,7 +1359,14 @@
           if (!breakShown && sessionSecs >= getBreakSecs()) {
             breakShown = true;
             chimeBreak();
-            startMicroBreak();
+            /* Pause the session clock and prompt the user instead of
+               auto-launching the break sequence */
+            clearInterval(sessionInterval);
+            sessionInterval = null;
+            postureStatusEl.className   = 'prompt';
+            postureStatusEl.textContent = 'Session Complete! Ready for your break?';
+            postureSubEl.textContent    = '';
+            startBreakBtn.style.display = 'block';
           }
         }, 1000);
       }
@@ -1411,6 +1438,12 @@
           }
         }, 1000);
       }
+
+      startBreakBtn.addEventListener('click', () => {
+        startBreakBtn.style.display = 'none';
+        postureSubEl.textContent    = '';
+        startMicroBreak();
+      });
 
       breakFinishBtn.addEventListener('click', () => {
         isBreakActive  = false;
