@@ -727,19 +727,26 @@
          animation keyframes have exclusive control of the transform property */
       #head {
         display: inline-block;
-        left: calc(50% - 13px); /* half of 26px width */
+        width: 26px; height: 26px;
+        left: calc(50% - 13px); /* half of 26px */
         transform: none;
         transform-origin: bottom center;
       }
       #torso {
         display: inline-block;
-        left: calc(50% - 2px);  /* half of 4px width */
+        width: 80px; height: 80px;
+        left: calc(50% - 40px); /* half of 80px */
         transform: none;
         transform-origin: center center;
         border-radius: 50%;
       }
-      #arm-left, #arm-right {
+      #arm-left {
         display: inline-block;
+        width: 30px; height: 4px;
+      }
+      #arm-right {
+        display: inline-block;
+        width: 30px; height: 4px;
       }
 
       /* Two independent arm divs — left and right — for per-arm animation */
